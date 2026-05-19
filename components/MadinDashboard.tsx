@@ -18,6 +18,8 @@ const agentShortLabels: Record<AgentKey, string> = {
 
 const levelTitles = ["Initialisation", "Cadrage", "Montage", "Conformite", "Suivi", "Preuve", "Pret controle"];
 const officialDemandUrl = "https://www.europe-martinique.com/je-fais-une-demande/";
+const fraudReportUrl =
+  "https://www.europe-martinique.com/signaler-une-fraude-dans-le-cadre-de-la-gestion-des-fonds-europeens/";
 
 export function MadinDashboard({ initialData }: Props) {
   const [data, setData] = useState(initialData);
@@ -299,6 +301,25 @@ export function MadinDashboard({ initialData }: Props) {
             </div>
             <a href={officialDemandUrl} rel="noreferrer" target="_blank">
               Ouvrir la page officielle
+            </a>
+          </section>
+
+          <section className="fraud-card">
+            <div>
+              <span>Mission vigilance</span>
+              <h2>Fraude et conflit d'interets</h2>
+              <p>
+                Un signalement peut concerner de faux documents, une retention indue de fonds, un
+                detournement, une corruption, un favoritisme ou un conflit d'interets.
+              </p>
+            </div>
+            <div className="fraud-checks">
+              <span>Canaux officiels</span>
+              <strong>CTM, OLAF, Parquet europeen</strong>
+              <small>Confidentialite et protection du lanceur d'alerte indiquees par Europe Martinique.</small>
+            </div>
+            <a href={fraudReportUrl} rel="noreferrer" target="_blank">
+              Signaler une fraude
             </a>
           </section>
 

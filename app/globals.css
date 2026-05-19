@@ -445,22 +445,46 @@ textarea {
   padding: 16px;
 }
 
+.fraud-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(220px, 0.7fr) auto;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid #f1b4b4;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fff7f7, #fff1f1);
+  padding: 16px;
+}
+
 .official-card span,
-.official-checks span {
+.official-checks span,
+.fraud-card span,
+.fraud-checks span {
   display: block;
-  color: #714e00;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
 }
 
-.official-card h2 {
+.official-card span,
+.official-checks span {
+  color: #714e00;
+}
+
+.fraud-card span,
+.fraud-checks span {
+  color: var(--danger);
+}
+
+.official-card h2,
+.fraud-card h2 {
   margin: 5px 0 6px;
   color: var(--ink);
   font-size: 16px;
 }
 
-.official-card p {
+.official-card p,
+.fraud-card p {
   margin: 0;
   font-size: 13px;
 }
@@ -470,24 +494,30 @@ textarea {
   padding-left: 16px;
 }
 
-.official-checks strong {
+.fraud-checks {
+  border-left: 1px solid #f1b4b4;
+  padding-left: 16px;
+}
+
+.official-checks strong,
+.fraud-checks strong {
   display: block;
   margin-top: 5px;
   color: var(--ink);
   font-size: 14px;
 }
 
-.official-checks small {
+.official-checks small,
+.fraud-checks small {
   display: block;
   margin-top: 4px;
 }
 
-.official-card a {
+.official-card a,
+.fraud-card a {
   display: inline-flex;
   justify-content: center;
-  border: 1px solid #185fa5;
   border-radius: 6px;
-  background: #185fa5;
   color: white;
   padding: 10px 12px;
   text-align: center;
@@ -495,8 +525,22 @@ textarea {
   white-space: nowrap;
 }
 
+.official-card a {
+  border: 1px solid #185fa5;
+  background: #185fa5;
+}
+
 .official-card a:hover {
   background: var(--eu-blue);
+}
+
+.fraud-card a {
+  border: 1px solid var(--danger);
+  background: var(--danger);
+}
+
+.fraud-card a:hover {
+  background: #8f1d14;
 }
 
 .livrable-workbench {
@@ -656,18 +700,27 @@ pre {
   .onboarding-track,
   .game-panel,
   .dossier-meta,
-  .agent-timeline,
-  .badge-board,
-  .official-card,
-  .livrable-workbench {
-    grid-template-columns: 1fr;
+    .agent-timeline,
+    .badge-board,
+    .official-card,
+    .fraud-card,
+    .livrable-workbench {
+      grid-template-columns: 1fr;
+    }
+
+  .official-checks,
+  .fraud-checks {
+    border-left: none;
+    padding-left: 0;
+    padding-top: 12px;
   }
 
   .official-checks {
-    border-left: none;
     border-top: 1px solid #e4c16d;
-    padding-left: 0;
-    padding-top: 12px;
+  }
+
+  .fraud-checks {
+    border-top: 1px solid #f1b4b4;
   }
 
   .next-action small {
