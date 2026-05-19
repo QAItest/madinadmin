@@ -7,13 +7,6 @@ type Props = {
   initialData: DashboardData;
 };
 
-const statusLabels = {
-  pending: "En attente",
-  ready: "Pret",
-  done: "Produit",
-  blocked: "Bloque"
-};
-
 const agentShortLabels: Record<AgentKey, string> = {
   diagnostiqueur: "Eligibilite",
   monteur: "Redaction",
@@ -29,6 +22,7 @@ export function MadinDashboard({ initialData }: Props) {
   const [activeLivrable, setActiveLivrable] = useState(initialData.livrables[0]?.path ?? "");
   const [busy, setBusy] = useState<string | undefined>();
   const [message, setMessage] = useState<string | undefined>();
+  const [showCreate, setShowCreate] = useState(!initialData.selected);
 
   const selectedLivrable = useMemo(
     () => data.livrables.find((livrable) => livrable.path === activeLivrable) ?? data.livrables[0],
@@ -58,7 +52,8 @@ export function MadinDashboard({ initialData }: Props) {
       if (!response.ok) throw new Error(await response.text());
       const created = await response.json();
       await refresh(created.id);
-      setMessage("Porteur cree et memoire initialisee.");
+      setShowCreate(false);
+      setMessage("Dossier cree. Lancez le diagnostic pour demarrer la chaine.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Creation impossible.");
     } finally {
@@ -89,28 +84,23 @@ export function MadinDashboard({ initialData }: Props) {
   }
 
   return (
-    <main>
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">Madin'Admin x ChatGPT</p>
-          <h1>Plateforme multi-agent administrative</h1>
-          <p>
-            Cree un porteur, lance la chaine FEDER/FSE+, puis consulte les livrables Markdown
-            versionnes par agent.
-          </p>
+    <main className="mvp-shell">
+      <header className="mvp-header">
+        <div className="brand-row">
+          <strong>Madin'Admin</strong>
+          <span>Plateforme d'assistance administrative IA - Martinique & Guadeloupe</span>
         </div>
-        <div className="status-panel">
-          <span className="badge">OpenAI ready</span>
-          <strong>{data.porteurs.length}</strong>
-          <small>porteur(s)</small>
-        </div>
+        <p>Orchestrateur multi-agents pour dossiers FEDER, FSE+ et dispositifs publics</p>
       </header>
 
       {message ? <div className="notice">{message}</div> : null}
 
-      <section className="workspace">
-        <aside className="sidebar">
-          <h2>Nouveau porteur</h2>
+      {showCreate ? (
+        <section className="create-card">
+          <div className="section-title standalone">
+            <h1>Creer un nouveau dossier FEDER</h1>
+            <span>ChatGPT / OpenAI</span>
+          </div>
           <form
             className="form"
             onSubmit={(event) => {
@@ -120,8 +110,18 @@ export function MadinDashboard({ initialData }: Props) {
             }}
           >
             <label>
-              Nom
-              <input name="name" required placeholder="Association pilote" />
+              Nom du porteur
+              <input name="name" required placeholder="Association Culturelle La Mariniere" />
+            </label>
+            <label>
+              Type de structure
+              <select name="structure" defaultValue="TPE">
+                <option>TPE</option>
+                <option>PME</option>
+                <option>Association loi 1901</option>
+                <option>Collectivite territoriale</option>
+                <option>SCIC</option>
+              </select>
             </label>
             <label>
               Territoire
@@ -131,16 +131,12 @@ export function MadinDashboard({ initialData }: Props) {
               </select>
             </label>
             <label>
-              Structure
-              <input name="structure" required placeholder="Association loi 1901" />
-            </label>
-            <label>
               Dispositif
-              <input name="dispositif" required placeholder="FEDER" />
+              <input name="dispositif" required defaultValue="FEDER" />
             </label>
             <label>
-              Budget
-              <input name="budget" placeholder="145000 EUR" />
+              Budget previsionnel
+              <input name="budget" placeholder="150000 EUR" />
             </label>
             <label>
               Date cible
@@ -148,62 +144,64 @@ export function MadinDashboard({ initialData }: Props) {
             </label>
             <label>
               Projet
-              <textarea name="project" required rows={5} placeholder="Transition numerique..." />
+              <textarea name="project" required rows={5} placeholder="Decrivez le projet, les publics vises et les actions principales." />
             </label>
             <button type="submit" disabled={busy === "create"}>
-              {busy === "create" ? "Creation..." : "Creer"}
+              {busy === "create" ? "Creation en cours..." : "Creer le dossier"}
             </button>
           </form>
-        </aside>
-
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>Dossier actif</h2>
-              <p>{data.selected ? data.selected.project : "Aucun porteur selectionne."}</p>
-            </div>
-            <select
-              value={selectedId}
-              onChange={async (event) => {
-                setSelectedId(event.target.value);
-                await refresh(event.target.value);
-              }}
-            >
-              {data.porteurs.length === 0 ? <option value="">Aucun porteur</option> : null}
-              {data.porteurs.map((porteur) => (
-                <option key={porteur.id} value={porteur.id}>
-                  {porteur.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {data.selected ? (
-            <div className="dossier-summary">
+          {data.porteurs.length > 0 ? (
+            <button className="ghost-button" type="button" onClick={() => setShowCreate(false)}>
+              Revenir au dossier actif
+            </button>
+          ) : null}
+        </section>
+      ) : (
+        <section className="mvp-dossier">
+          <div className="dossier-card">
+            <div className="dossier-card-head">
               <div>
-                <span>Porteur</span>
-                <strong>{data.selected.name}</strong>
+                <h1>{data.selected?.name ?? "Aucun dossier"}</h1>
+                <p>
+                  ID: {data.selected?.id ?? "-"} · Etapes: {completedSteps} / {data.steps.length}
+                </p>
               </div>
+              <div className={completedSteps === data.steps.length ? "dossier-status complete" : "dossier-status"}>
+                {completedSteps === data.steps.length ? "Complete" : "En cours"}
+              </div>
+            </div>
+
+            <div className="dossier-meta">
               <div>
                 <span>Structure</span>
-                <strong>{data.selected.structure}</strong>
+                <strong>{data.selected?.structure ?? "-"}</strong>
               </div>
               <div>
                 <span>Dispositif</span>
-                <strong>{data.selected.dispositif}</strong>
+                <strong>{data.selected?.dispositif ?? "-"}</strong>
               </div>
               <div>
                 <span>Budget</span>
-                <strong>{data.selected.budget || "A completer"}</strong>
+                <strong>{data.selected?.budget || "A completer"}</strong>
               </div>
               <div>
-                <span>Progression</span>
-                <strong>
-                  {completedSteps} / {data.steps.length}
-                </strong>
+                <span>Dossier actif</span>
+                <select
+                  value={selectedId}
+                  onChange={async (event) => {
+                    setSelectedId(event.target.value);
+                    await refresh(event.target.value);
+                  }}
+                >
+                  {data.porteurs.map((porteur) => (
+                    <option key={porteur.id} value={porteur.id}>
+                      {porteur.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
-          ) : null}
+          </div>
 
           <div className="agent-timeline" aria-label="Timeline agents">
             {data.steps.map((step, index) => (
@@ -223,36 +221,17 @@ export function MadinDashboard({ initialData }: Props) {
 
           <div className="next-action">
             <span>Prochaine action</span>
-            <strong>{busy ? "Generation du livrable en cours" : currentStep?.title ?? "Workflow complet"}</strong>
-          </div>
-
-          <div className="workflow">
-            {data.steps.map((step) => (
-              <article className={`step-card ${step.status}`} key={step.key}>
-                <div>
-                  <span>{statusLabels[step.status]}</span>
-                  <h3>{step.title}</h3>
-                  {step.outputPath ? <small>{step.outputPath}</small> : <small>{step.folder}/</small>}
-                </div>
-                <button
-                  type="button"
-                  disabled={!selectedId || step.status === "pending" || busy === step.key}
-                  onClick={() => runStep(step.key)}
-                >
-                  {busy === step.key ? "Generation..." : step.status === "done" ? "Regenerer" : "Lancer"}
-                </button>
-              </article>
-            ))}
+            <strong>{busy ? "Traitement en cours" : currentStep?.title ?? "Workflow complet"}</strong>
           </div>
 
           <div className="livrable-workbench">
             <section className="journal">
               <div className="section-title">
-                <h3>Journal de progression</h3>
+                <h2>Journal de progression</h2>
                 <span>{data.livrables.length} livrable(s)</span>
               </div>
               <div className="journal-list">
-                {data.livrables.length === 0 ? <p>Aucun livrable genere pour l'instant.</p> : null}
+                {data.livrables.length === 0 ? <p>Aucun livrable pour l'instant.</p> : null}
                 {data.livrables.map((livrable) => (
                   <button
                     key={livrable.path}
@@ -261,23 +240,30 @@ export function MadinDashboard({ initialData }: Props) {
                     onClick={() => setActiveLivrable(livrable.path)}
                   >
                     <span>{livrable.title}</span>
-                    <small>{livrable.path}</small>
-                    <em>{new Date(livrable.createdAt).toLocaleString("fr-FR")}</em>
+                    <small>{livrable.content.slice(0, 110).replace(/\s+/g, " ")}...</small>
+                    <em>{new Date(livrable.createdAt).toLocaleTimeString("fr-FR")}</em>
                   </button>
                 ))}
+                {busy ? <p>Traitement en cours...</p> : null}
               </div>
             </section>
 
             <section className="livrables">
               <div className="section-title">
-                <h3>{selectedLivrable?.title ?? "Detail livrable"}</h3>
+                <h2>{selectedLivrable?.title ?? "Selectionnez un livrable"}</h2>
                 <span>{selectedLivrable ? "Markdown" : "Vide"}</span>
               </div>
-              <pre>{selectedLivrable?.content ?? "Cree un porteur puis lance le diagnostic pour commencer."}</pre>
+              <pre>{selectedLivrable?.content ?? "Lancez le diagnostic pour generer le premier livrable."}</pre>
             </section>
           </div>
+
+          <div className="footer-actions">
+            <button className="ghost-button" type="button" onClick={() => setShowCreate(true)}>
+              Creer un nouveau dossier
+            </button>
+          </div>
         </section>
-      </section>
+      )}
     </main>
   );
 }
