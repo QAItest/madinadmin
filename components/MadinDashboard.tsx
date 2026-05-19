@@ -21,6 +21,28 @@ const officialDemandUrl = "https://www.europe-martinique.com/je-fais-une-demande
 const europacAuthUrl = "https://europac.europe-martinique.com/sub/tiers/authentification";
 const fraudReportUrl =
   "https://www.europe-martinique.com/signaler-une-fraude-dans-le-cadre-de-la-gestion-des-fonds-europeens/";
+const funds = [
+  {
+    code: "FEADER",
+    name: "Fonds Europeen Agricole pour le Developpement Rural",
+    focus: "Agriculture, ruralite, installation, transformation, developpement rural"
+  },
+  {
+    code: "FEDER",
+    name: "Fonds Europeen de Developpement Regional",
+    focus: "Innovation, numerique, transition, infrastructures, competitivite"
+  },
+  {
+    code: "FSE+",
+    name: "Fonds Social Europeen Plus",
+    focus: "Emploi, inclusion, formation, insertion, competences"
+  },
+  {
+    code: "FEAMPA",
+    name: "Fonds Europeen pour les Affaires Maritimes, la Peche et l'Aquaculture",
+    focus: "Peche, aquaculture, economie maritime, filieres halieutiques"
+  }
+];
 const europacGuideSteps = [
   {
     title: "Compte d'acces",
@@ -137,6 +159,10 @@ export function MadinDashboard({ initialData }: Props) {
             <span>ChatGPT / OpenAI</span>
           </div>
           <div className="onboarding-track">
+            <div>
+              <strong>4 fonds</strong>
+              <span>FEADER, FEDER, FSE+ et FEAMPA selon la nature du projet.</span>
+            </div>
             <div>
               <strong>6 missions</strong>
               <span>Diagnostic, montage, pieces, controle, suivi, preuve.</span>
@@ -311,6 +337,25 @@ export function MadinDashboard({ initialData }: Props) {
               </div>
             ))}
           </div>
+
+          <section className="funds-card">
+            <div className="section-title standalone">
+              <h2>Les 4 fonds Europe Martinique</h2>
+              <span>Choix du guichet</span>
+            </div>
+            <div className="fund-grid">
+              {funds.map((fund) => (
+                <article
+                  className={data.selected?.dispositif.toLowerCase().includes(fund.code.toLowerCase().replace("+", "")) ? "fund-item selected" : "fund-item"}
+                  key={fund.code}
+                >
+                  <strong>{fund.code}</strong>
+                  <span>{fund.name}</span>
+                  <p>{fund.focus}</p>
+                </article>
+              ))}
+            </div>
+          </section>
 
           <section className="official-card">
             <div>
