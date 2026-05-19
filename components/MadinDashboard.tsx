@@ -17,6 +17,7 @@ const agentShortLabels: Record<AgentKey, string> = {
 };
 
 const levelTitles = ["Initialisation", "Cadrage", "Montage", "Conformite", "Suivi", "Preuve", "Pret controle"];
+const officialDemandUrl = "https://www.europe-martinique.com/je-fais-une-demande/";
 
 export function MadinDashboard({ initialData }: Props) {
   const [data, setData] = useState(initialData);
@@ -281,6 +282,25 @@ export function MadinDashboard({ initialData }: Props) {
               </div>
             ))}
           </div>
+
+          <section className="official-card">
+            <div>
+              <span>Mission depot officiel</span>
+              <h2>Europe Martinique - Je fais une demande</h2>
+              <p>
+                Le depot doit etre effectue avant le debut des travaux. Verifiez le DOMO, le mode de
+                depot applicable et les pieces administratives avant toute transmission.
+              </p>
+            </div>
+            <div className="official-checks">
+              <span>Avant depot</span>
+              <strong>{completedSteps >= 4 ? "Pret pour revue porteur" : "Controle conformite requis"}</strong>
+              <small>Appel a projets, fil de l'eau, fiches actions et liste des pieces.</small>
+            </div>
+            <a href={officialDemandUrl} rel="noreferrer" target="_blank">
+              Ouvrir la page officielle
+            </a>
+          </section>
 
           <div className="livrable-workbench">
             <section className="journal">

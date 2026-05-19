@@ -434,6 +434,71 @@ textarea {
   color: var(--tropical);
 }
 
+.official-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(220px, 0.7fr) auto;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid #e4c16d;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fffaf0, var(--gold-soft));
+  padding: 16px;
+}
+
+.official-card span,
+.official-checks span {
+  display: block;
+  color: #714e00;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.official-card h2 {
+  margin: 5px 0 6px;
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.official-card p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.official-checks {
+  border-left: 1px solid #e4c16d;
+  padding-left: 16px;
+}
+
+.official-checks strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.official-checks small {
+  display: block;
+  margin-top: 4px;
+}
+
+.official-card a {
+  display: inline-flex;
+  justify-content: center;
+  border: 1px solid #185fa5;
+  border-radius: 6px;
+  background: #185fa5;
+  color: white;
+  padding: 10px 12px;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.official-card a:hover {
+  background: var(--eu-blue);
+}
+
 .livrable-workbench {
   display: grid;
   grid-template-columns: minmax(300px, 1fr) minmax(0, 1fr);
@@ -593,8 +658,16 @@ pre {
   .dossier-meta,
   .agent-timeline,
   .badge-board,
+  .official-card,
   .livrable-workbench {
     grid-template-columns: 1fr;
+  }
+
+  .official-checks {
+    border-left: none;
+    border-top: 1px solid #e4c16d;
+    padding-left: 0;
+    padding-top: 12px;
   }
 
   .next-action small {
