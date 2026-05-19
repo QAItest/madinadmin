@@ -9,3 +9,13 @@ __pycache__/
 .DS_Store
 Thumbs.db
 *.log
+.data/
+porteurs/*/
+!porteurs/_template/
+diagnostics/*.md
+dossiers/*.md
+checklists/*.md
+controles/*.md
+suivi/*.md
+archives/*.md
+rapports/*.md

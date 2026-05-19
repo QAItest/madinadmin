@@ -20,6 +20,18 @@ npm install
 npm run dev
 ```
 
+Ouvrir ensuite `http://localhost:3000`.
+
+## Fonctionnalites implementees
+
+- Creation d'un porteur avec memoire locale dans `porteurs/{porteur}/`.
+- Dashboard de suivi des 6 etapes : diagnostic, montage, checklist, controle, suivi, archivage.
+- Generation de livrables Markdown versionnes dans les dossiers metier.
+- Enchainement sequentiel : une etape devient disponible apres production de la precedente.
+- Routes API Next.js pour creer les porteurs et lancer les agents.
+- Mode fallback local sans cle API, utile pour tester le workflow.
+- Mode OpenAI actif automatiquement quand `OPENAI_API_KEY` est renseignee.
+
 API Python :
 
 ```bash

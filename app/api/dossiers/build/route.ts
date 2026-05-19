@@ -1,14 +1,10 @@
-import { generateText } from "ai";
-import { modelForAgent } from "../../../../lib/openai";
+import { runAgent } from "../../../../lib/agents";
 
 export async function POST(request: Request) {
   const payload = await request.json();
+  if (!payload.porteurId) {
+    return Response.json({ error: "porteurId est obligatoire." }, { status: 400 });
+  }
 
-  const { text } = await generateText({
-    model: modelForAgent("monteur"),
-    system: "Tu es le Monteur Madin'Admin. Tu rediges un dossier administratif structure, avec indicateurs SMART et sources explicites. N'invente aucune donnee.",
-    prompt: JSON.stringify(payload, null, 2)
-  });
-
-  return Response.json({ agent: "monteur", status: "draft", text });
+  return Response.json(await runAgent(payload.porteurId, "monteur"));
 }
