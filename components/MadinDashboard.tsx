@@ -14,6 +14,15 @@ const statusLabels = {
   blocked: "Bloque"
 };
 
+const agentShortLabels: Record<AgentKey, string> = {
+  diagnostiqueur: "Eligibilite",
+  monteur: "Redaction",
+  documentaliste: "Checklist",
+  controleur: "Conformite",
+  suiveur: "Post-depot",
+  archiviste: "Reporting"
+};
+
 export function MadinDashboard({ initialData }: Props) {
   const [data, setData] = useState(initialData);
   const [selectedId, setSelectedId] = useState(initialData.selected?.id ?? "");
@@ -25,6 +34,9 @@ export function MadinDashboard({ initialData }: Props) {
     () => data.livrables.find((livrable) => livrable.path === activeLivrable) ?? data.livrables[0],
     [activeLivrable, data.livrables]
   );
+  const completedSteps = data.steps.filter((step) => step.status === "done").length;
+  const currentStep =
+    data.steps.find((step) => step.status === "ready") ?? data.steps.find((step) => step.status === "pending");
 
   async function refresh(porteurId = selectedId) {
     const response = await fetch(`/api/porteurs?selected=${encodeURIComponent(porteurId)}`, { cache: "no-store" });
@@ -166,6 +178,54 @@ export function MadinDashboard({ initialData }: Props) {
             </select>
           </div>
 
+          {data.selected ? (
+            <div className="dossier-summary">
+              <div>
+                <span>Porteur</span>
+                <strong>{data.selected.name}</strong>
+              </div>
+              <div>
+                <span>Structure</span>
+                <strong>{data.selected.structure}</strong>
+              </div>
+              <div>
+                <span>Dispositif</span>
+                <strong>{data.selected.dispositif}</strong>
+              </div>
+              <div>
+                <span>Budget</span>
+                <strong>{data.selected.budget || "A completer"}</strong>
+              </div>
+              <div>
+                <span>Progression</span>
+                <strong>
+                  {completedSteps} / {data.steps.length}
+                </strong>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="agent-timeline" aria-label="Timeline agents">
+            {data.steps.map((step, index) => (
+              <button
+                className={`agent-node ${step.status} ${busy === step.key ? "running" : ""}`}
+                disabled={!selectedId || step.status === "pending" || Boolean(busy)}
+                key={step.key}
+                onClick={() => runStep(step.key)}
+                type="button"
+              >
+                <span className="agent-index">{index + 1}</span>
+                <strong>{step.title}</strong>
+                <small>{agentShortLabels[step.key]}</small>
+              </button>
+            ))}
+          </div>
+
+          <div className="next-action">
+            <span>Prochaine action</span>
+            <strong>{busy ? "Generation du livrable en cours" : currentStep?.title ?? "Workflow complet"}</strong>
+          </div>
+
           <div className="workflow">
             {data.steps.map((step) => (
               <article className={`step-card ${step.status}`} key={step.key}>
@@ -185,21 +245,36 @@ export function MadinDashboard({ initialData }: Props) {
             ))}
           </div>
 
-          <div className="livrables">
-            <div className="tabs">
-              {data.livrables.length === 0 ? <span>Aucun livrable genere</span> : null}
-              {data.livrables.map((livrable) => (
-                <button
-                  key={livrable.path}
-                  type="button"
-                  className={selectedLivrable?.path === livrable.path ? "active" : ""}
-                  onClick={() => setActiveLivrable(livrable.path)}
-                >
-                  {livrable.title}
-                </button>
-              ))}
-            </div>
-            <pre>{selectedLivrable?.content ?? "Cree un porteur puis lance le diagnostic pour commencer."}</pre>
+          <div className="livrable-workbench">
+            <section className="journal">
+              <div className="section-title">
+                <h3>Journal de progression</h3>
+                <span>{data.livrables.length} livrable(s)</span>
+              </div>
+              <div className="journal-list">
+                {data.livrables.length === 0 ? <p>Aucun livrable genere pour l'instant.</p> : null}
+                {data.livrables.map((livrable) => (
+                  <button
+                    key={livrable.path}
+                    type="button"
+                    className={selectedLivrable?.path === livrable.path ? "journal-item active" : "journal-item"}
+                    onClick={() => setActiveLivrable(livrable.path)}
+                  >
+                    <span>{livrable.title}</span>
+                    <small>{livrable.path}</small>
+                    <em>{new Date(livrable.createdAt).toLocaleString("fr-FR")}</em>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="livrables">
+              <div className="section-title">
+                <h3>{selectedLivrable?.title ?? "Detail livrable"}</h3>
+                <span>{selectedLivrable ? "Markdown" : "Vide"}</span>
+              </div>
+              <pre>{selectedLivrable?.content ?? "Cree un porteur puis lance le diagnostic pour commencer."}</pre>
+            </section>
           </div>
         </section>
       </section>
