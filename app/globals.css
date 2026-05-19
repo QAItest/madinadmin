@@ -436,7 +436,7 @@ textarea {
 
 .official-card {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(220px, 0.7fr) auto;
+  grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.7fr) minmax(160px, auto);
   gap: 16px;
   align-items: center;
   border: 1px solid #e4c16d;
@@ -513,6 +513,11 @@ textarea {
   margin-top: 4px;
 }
 
+.official-actions {
+  display: grid;
+  gap: 8px;
+}
+
 .official-card a,
 .fraud-card a {
   display: inline-flex;
@@ -532,6 +537,67 @@ textarea {
 
 .official-card a:hover {
   background: var(--eu-blue);
+}
+
+.europac-guide {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  padding: 18px;
+}
+
+.europac-guide .section-title.standalone {
+  padding-bottom: 16px;
+}
+
+.europac-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.europac-step {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+  padding: 12px;
+}
+
+.europac-step > strong {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: white;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.europac-step.active {
+  border-color: var(--lagoon);
+  background: var(--lagoon-soft);
+}
+
+.europac-step.active > strong {
+  background: var(--lagoon);
+  color: white;
+}
+
+.europac-step span {
+  display: block;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.europac-step p {
+  margin: 4px 0 0;
+  font-size: 12px;
 }
 
 .fraud-card a {
@@ -703,6 +769,7 @@ pre {
     .agent-timeline,
     .badge-board,
     .official-card,
+    .europac-steps,
     .fraud-card,
     .livrable-workbench {
       grid-template-columns: 1fr;

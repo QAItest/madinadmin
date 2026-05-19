@@ -18,8 +18,35 @@ const agentShortLabels: Record<AgentKey, string> = {
 
 const levelTitles = ["Initialisation", "Cadrage", "Montage", "Conformite", "Suivi", "Preuve", "Pret controle"];
 const officialDemandUrl = "https://www.europe-martinique.com/je-fais-une-demande/";
+const europacAuthUrl = "https://europac.europe-martinique.com/sub/tiers/authentification";
 const fraudReportUrl =
   "https://www.europe-martinique.com/signaler-une-fraude-dans-le-cadre-de-la-gestion-des-fonds-europeens/";
+const europacGuideSteps = [
+  {
+    title: "Compte d'acces",
+    detail: "Se connecter ou creer l'acces porteur, puis verifier l'activation du compte."
+  },
+  {
+    title: "Fiche tiers",
+    detail: "Completer l'identification, SIRET, adresse, representant, contacts et certification."
+  },
+  {
+    title: "Coordonnees bancaires",
+    detail: "Renseigner l'IBAN et joindre les justificatifs demandes."
+  },
+  {
+    title: "Dispositif",
+    detail: "Choisir le fonds ou l'appel ouvert avant de saisir la demande d'aide."
+  },
+  {
+    title: "Pieces",
+    detail: "Televerser les documents administratifs, financiers et techniques."
+  },
+  {
+    title: "Validation",
+    detail: "Controler, certifier, transmettre et conserver l'accuse de reception."
+  }
+];
 
 export function MadinDashboard({ initialData }: Props) {
   const [data, setData] = useState(initialData);
@@ -288,10 +315,10 @@ export function MadinDashboard({ initialData }: Props) {
           <section className="official-card">
             <div>
               <span>Mission depot officiel</span>
-              <h2>Europe Martinique - Je fais une demande</h2>
+              <h2>Assistant Europac - depot guide</h2>
               <p>
-                Le depot doit etre effectue avant le debut des travaux. Verifiez le DOMO, le mode de
-                depot applicable et les pieces administratives avant toute transmission.
+                Inspirez-vous du tutoriel Europac : preparez le compte, la fiche tiers, les pieces,
+                puis saisissez la demande avant le debut des travaux.
               </p>
             </div>
             <div className="official-checks">
@@ -299,9 +326,35 @@ export function MadinDashboard({ initialData }: Props) {
               <strong>{completedSteps >= 4 ? "Pret pour revue porteur" : "Controle conformite requis"}</strong>
               <small>Appel a projets, fil de l'eau, fiches actions et liste des pieces.</small>
             </div>
-            <a href={officialDemandUrl} rel="noreferrer" target="_blank">
-              Ouvrir la page officielle
-            </a>
+            <div className="official-actions">
+              <a href={officialDemandUrl} rel="noreferrer" target="_blank">
+                Guide demande
+              </a>
+              <a href={europacAuthUrl} rel="noreferrer" target="_blank">
+                Acces Europac
+              </a>
+            </div>
+          </section>
+
+          <section className="europac-guide" aria-label="Tutoriel Europac">
+            <div className="section-title standalone">
+              <h2>Parcours inspire du tutoriel Europac</h2>
+              <span>{completedSteps >= 4 ? "Pret a saisir" : "Preparation"}</span>
+            </div>
+            <div className="europac-steps">
+              {europacGuideSteps.map((step, index) => (
+                <div
+                  className={index < Math.max(1, Math.min(completedSteps + 1, europacGuideSteps.length)) ? "europac-step active" : "europac-step"}
+                  key={step.title}
+                >
+                  <strong>{index + 1}</strong>
+                  <div>
+                    <span>{step.title}</span>
+                    <p>{step.detail}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </section>
 
           <section className="fraud-card">
