@@ -1,6 +1,6 @@
-# /dossier-feder
+# /archive
 
-Lancer l'etape $cmd pour un porteur et un dossier donnes.
+Lancer l'etape /archive pour un porteur et un dossier donnes avec l'orchestrateur ChatGPT/OpenAI.
 
 Arguments attendus :
 

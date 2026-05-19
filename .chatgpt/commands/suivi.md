@@ -1,6 +1,6 @@
 # /suivi
 
-Lancer l'etape $cmd pour un porteur et un dossier donnes.
+Lancer l'etape /suivi pour un porteur et un dossier donnes avec l'orchestrateur ChatGPT/OpenAI.
 
 Arguments attendus :
 

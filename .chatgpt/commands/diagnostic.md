@@ -1,6 +1,6 @@
-# /controle
+# /diagnostic
 
-Lancer l'etape $cmd pour un porteur et un dossier donnes.
+Lancer l'etape /diagnostic pour un porteur et un dossier donnes avec l'orchestrateur ChatGPT/OpenAI.
 
 Arguments attendus :
 

@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "latest",
+    "@ai-sdk/openai": "latest",
     "ai": "latest",
     "gray-matter": "latest",
     "next": "latest",

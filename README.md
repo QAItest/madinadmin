@@ -1,19 +1,19 @@
 # Madin'Admin Platform
 
-Plateforme multi-agent administrative pour le montage, la conformité, le suivi et l'archivage de dossiers FEDER, FSE+ et dispositifs publics ultramarins.
+Plateforme multi-agent administrative adaptee a ChatGPT/OpenAI pour le montage, la conformite, le suivi et l'archivage de dossiers FEDER, FSE+ et dispositifs publics ultramarins.
 
 ## Objectif
 
-Le projet organise une chaine auditable d'agents spécialisés autour de livrables Markdown versionnés : diagnostic, montage du dossier, checklist documentaire, contrôle de conformité, suivi post-dépôt et archivage.
+Le projet organise une chaine auditable d'agents specialises autour de livrables Markdown versionnes : diagnostic, montage du dossier, checklist documentaire, controle de conformite, suivi post-depot et archivage.
 
-## Stack prévue
+## Stack prevue
 
-- Dashboard web : Next.js 16, React, gray-matter, génération PDF via Puppeteer.
-- Backend : FastAPI pour les intégrations e-Synergie, Démarches-Simplifiées, OCR et signature.
-- Agents : fichiers `.claude/agents/*.md` et commandes `.claude/commands/*.md`.
-- Mémoire porteur : fichiers Markdown dans `porteurs/{porteur}/`.
+- Dashboard web : Next.js 16, React, AI SDK OpenAI, gray-matter, generation PDF via Puppeteer.
+- Backend : FastAPI pour les integrations e-Synergie, Demarches-Simplifiees, OCR et signature.
+- Agents : fichiers `.chatgpt/agents/*.md` et commandes `.chatgpt/commands/*.md`.
+- Memoire porteur : fichiers Markdown dans `porteurs/{porteur}/`.
 
-## Démarrage
+## Demarrage
 
 ```bash
 npm install
@@ -29,10 +29,21 @@ pip install -r requirements.txt
 uvicorn api.main:app --reload --port 8000
 ```
 
-## Règles bloquantes
+## Configuration OpenAI
 
-- Ne jamais inventer de chiffres, critères, dates, financements ou pièces.
-- Ne jamais déposer un dossier automatiquement à la place du porteur.
+Copier `.env.example` vers `.env.local`, puis renseigner :
+
+```env
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL_ORCHESTRATOR=gpt-5.2
+OPENAI_MODEL_AGENT=gpt-5.4-mini
+OPENAI_MODEL_AUDIT=gpt-5.2
+```
+
+## Regles bloquantes
+
+- Ne jamais inventer de chiffres, criteres, dates, financements ou pieces.
+- Ne jamais deposer un dossier automatiquement a la place du porteur.
 - Ne jamais signer ou engager juridiquement le porteur.
 - Chaque livrable doit contenir le frontmatter YAML obligatoire.
-- Cloisonnement strict des données par porteur.
+- Cloisonnement strict des donnees par porteur.
