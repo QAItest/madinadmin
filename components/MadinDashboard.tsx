@@ -16,6 +16,8 @@ const agentShortLabels: Record<AgentKey, string> = {
   archiviste: "Reporting"
 };
 
+const levelTitles = ["Initialisation", "Cadrage", "Montage", "Conformite", "Suivi", "Preuve", "Pret controle"];
+
 export function MadinDashboard({ initialData }: Props) {
   const [data, setData] = useState(initialData);
   const [selectedId, setSelectedId] = useState(initialData.selected?.id ?? "");
@@ -31,6 +33,9 @@ export function MadinDashboard({ initialData }: Props) {
   const completedSteps = data.steps.filter((step) => step.status === "done").length;
   const currentStep =
     data.steps.find((step) => step.status === "ready") ?? data.steps.find((step) => step.status === "pending");
+  const progress = Math.round((completedSteps / Math.max(data.steps.length, 1)) * 100);
+  const dossierScore = completedSteps * 100 + data.livrables.length * 25;
+  const levelTitle = levelTitles[Math.min(completedSteps, levelTitles.length - 1)];
 
   async function refresh(porteurId = selectedId) {
     const response = await fetch(`/api/porteurs?selected=${encodeURIComponent(porteurId)}`, { cache: "no-store" });
@@ -100,6 +105,20 @@ export function MadinDashboard({ initialData }: Props) {
           <div className="section-title standalone">
             <h1>Creer un nouveau dossier FEDER</h1>
             <span>ChatGPT / OpenAI</span>
+          </div>
+          <div className="onboarding-track">
+            <div>
+              <strong>6 missions</strong>
+              <span>Diagnostic, montage, pieces, controle, suivi, preuve.</span>
+            </div>
+            <div>
+              <strong>Score dossier</strong>
+              <span>Chaque livrable produit fait avancer la jauge.</span>
+            </div>
+            <div>
+              <strong>Badges</strong>
+              <span>Les etapes terminees restent visibles dans le journal.</span>
+            </div>
           </div>
           <form
             className="form"
@@ -171,6 +190,26 @@ export function MadinDashboard({ initialData }: Props) {
               </div>
             </div>
 
+            <div className="game-panel" aria-label="Progression dossier">
+              <div className="score-card">
+                <span>Niveau dossier</span>
+                <strong>{levelTitle}</strong>
+              </div>
+              <div className="score-card">
+                <span>Score</span>
+                <strong>{dossierScore} pts</strong>
+              </div>
+              <div className="progress-card">
+                <div>
+                  <span>Progression</span>
+                  <strong>{progress}%</strong>
+                </div>
+                <div className="progress-bar" aria-hidden="true">
+                  <div style={{ width: `${progress}%` }} />
+                </div>
+              </div>
+            </div>
+
             <div className="dossier-meta">
               <div>
                 <span>Structure</span>
@@ -215,13 +254,32 @@ export function MadinDashboard({ initialData }: Props) {
                 <span className="agent-index">{index + 1}</span>
                 <strong>{step.title}</strong>
                 <small>{agentShortLabels[step.key]}</small>
+                {step.status === "done" ? <em>Badge obtenu</em> : null}
               </button>
             ))}
           </div>
 
           <div className="next-action">
-            <span>Prochaine action</span>
-            <strong>{busy ? "Traitement en cours" : currentStep?.title ?? "Workflow complet"}</strong>
+            <div>
+              <span>Prochaine mission</span>
+              <strong>{busy ? "Traitement en cours" : currentStep?.title ?? "Workflow complet"}</strong>
+            </div>
+            <small>
+              {busy
+                ? "L'agent produit le livrable."
+                : currentStep
+                  ? "Terminez cette mission pour debloquer la suivante."
+                  : "Tous les badges du dossier sont obtenus."}
+            </small>
+          </div>
+
+          <div className="badge-board" aria-label="Badges obtenus">
+            {data.steps.map((step) => (
+              <div className={step.status === "done" ? "badge-token earned" : "badge-token"} key={step.key}>
+                <span>{step.title}</span>
+                <strong>{step.status === "done" ? "Obtenu" : step.status === "ready" ? "Disponible" : "Verrouille"}</strong>
+              </div>
+            ))}
           </div>
 
           <div className="livrable-workbench">

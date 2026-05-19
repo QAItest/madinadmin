@@ -198,6 +198,61 @@ textarea {
   font-size: 13px;
 }
 
+.game-panel {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.7fr) minmax(140px, 0.5fr) minmax(260px, 1.4fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.score-card {
+  background: var(--eu-blue-soft);
+}
+
+.score-card span,
+.progress-card span {
+  margin-top: 0;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.score-card strong {
+  margin-top: 6px;
+  color: #185fa5;
+  font-size: 20px;
+}
+
+.progress-card {
+  background: white;
+}
+
+.progress-card > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.progress-card strong {
+  color: var(--tropical);
+  font-size: 18px;
+}
+
+.progress-bar {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--panel-2);
+}
+
+.progress-bar div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--lagoon), var(--tropical));
+  transition: width 0.35s ease;
+}
+
 .dossier-status {
   display: inline-flex;
   flex: 0 0 auto;
@@ -321,6 +376,18 @@ textarea {
   margin-top: 4px;
 }
 
+.agent-node em {
+  display: inline-flex;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: white;
+  color: var(--tropical);
+  padding: 3px 8px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
 .next-action {
   display: flex;
   justify-content: space-between;
@@ -334,6 +401,37 @@ textarea {
 
 .next-action strong {
   color: #714e00;
+}
+
+.next-action small {
+  max-width: 360px;
+  text-align: right;
+}
+
+.badge-board {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.badge-token {
+  min-height: 72px;
+  background: var(--panel-2);
+}
+
+.badge-token.earned {
+  border-color: var(--tropical);
+  background: var(--tropical-soft);
+}
+
+.badge-token strong {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.badge-token.earned strong {
+  color: var(--tropical);
 }
 
 .livrable-workbench {
@@ -368,6 +466,43 @@ textarea {
 .section-title.standalone {
   border-bottom: none;
   padding: 0 0 22px;
+}
+
+.onboarding-track {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.onboarding-track div,
+.score-card,
+.progress-card,
+.badge-token {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfd;
+  padding: 12px;
+}
+
+.onboarding-track strong,
+.score-card strong,
+.progress-card strong,
+.badge-token strong {
+  display: block;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.onboarding-track span,
+.score-card span,
+.progress-card span,
+.badge-token span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .journal-list {
@@ -453,9 +588,17 @@ pre {
     display: grid;
   }
 
+  .onboarding-track,
+  .game-panel,
   .dossier-meta,
   .agent-timeline,
+  .badge-board,
   .livrable-workbench {
     grid-template-columns: 1fr;
+  }
+
+  .next-action small {
+    max-width: none;
+    text-align: left;
   }
 }
