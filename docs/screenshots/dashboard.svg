@@ -1,0 +1,126 @@
+<svg width="1200" height="750" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+  <!-- Background -->
+  <rect width="1200" height="750" fill="#0f172a"/>
+
+  <!-- Top nav -->
+  <rect width="1200" height="56" fill="#1e293b"/>
+  <rect x="16" y="16" width="24" height="24" rx="4" fill="#003189"/>
+  <text x="48" y="33" fill="#f1f5f9" font-size="16" font-weight="700">Madin'Admin</text>
+  <text x="200" y="33" fill="#94a3b8" font-size="13">Plateforme Multi-Agent FEDER/FSE+</text>
+  <rect x="1100" y="14" width="84" height="28" rx="6" fill="#003189"/>
+  <text x="1142" y="32" fill="white" font-size="12" text-anchor="middle">+ Nouveau</text>
+
+  <!-- Sidebar -->
+  <rect x="0" y="56" width="220" height="694" fill="#1e293b"/>
+  <text x="24" y="96" fill="#64748b" font-size="11" font-weight="600">NAVIGATION</text>
+  <rect x="8" y="104" width="204" height="36" rx="6" fill="#003189" opacity="0.3"/>
+  <text x="24" y="127" fill="#93c5fd" font-size="13" font-weight="600">⊞  Dashboard</text>
+  <text x="24" y="164" fill="#94a3b8" font-size="13">👥  Porteurs</text>
+  <text x="24" y="196" fill="#94a3b8" font-size="13">📁  Dossiers</text>
+  <text x="24" y="228" fill="#94a3b8" font-size="13">🤖  Agents</text>
+  <text x="24" y="260" fill="#94a3b8" font-size="13">📊  Rapports</text>
+  <line x1="8" y1="280" x2="212" y2="280" stroke="#334155" stroke-width="1"/>
+  <text x="24" y="310" fill="#64748b" font-size="11" font-weight="600">AGENTS</text>
+  <circle cx="20" cy="332" r="5" fill="#22c55e"/>
+  <text x="32" y="336" fill="#94a3b8" font-size="12">Diagnostiqueur</text>
+  <circle cx="20" cy="356" r="5" fill="#22c55e"/>
+  <text x="32" y="360" fill="#94a3b8" font-size="12">Monteur</text>
+  <circle cx="20" cy="380" r="5" fill="#f59e0b"/>
+  <text x="32" y="384" fill="#94a3b8" font-size="12">Documentaliste</text>
+  <circle cx="20" cy="404" r="5" fill="#22c55e"/>
+  <text x="32" y="408" fill="#94a3b8" font-size="12">Contrôleur</text>
+  <circle cx="20" cy="428" r="5" fill="#22c55e"/>
+  <text x="32" y="432" fill="#94a3b8" font-size="12">Suiveur</text>
+  <circle cx="20" cy="452" r="5" fill="#22c55e"/>
+  <text x="32" y="456" fill="#94a3b8" font-size="12">Archiviste</text>
+
+  <!-- Main content -->
+  <!-- Stats row -->
+  <rect x="240" y="72" width="180" height="80" rx="8" fill="#1e293b"/>
+  <text x="260" y="98" fill="#64748b" font-size="12">Dossiers actifs</text>
+  <text x="260" y="130" fill="#f1f5f9" font-size="32" font-weight="700">12</text>
+
+  <rect x="436" y="72" width="180" height="80" rx="8" fill="#1e293b"/>
+  <text x="456" y="98" fill="#64748b" font-size="12">En conformité</text>
+  <text x="456" y="130" fill="#22c55e" font-size="32" font-weight="700">9</text>
+
+  <rect x="632" y="72" width="180" height="80" rx="8" fill="#1e293b"/>
+  <text x="652" y="98" fill="#64748b" font-size="12">Alertes actives</text>
+  <text x="652" y="130" fill="#f59e0b" font-size="32" font-weight="700">3</text>
+
+  <rect x="828" y="72" width="180" height="80" rx="8" fill="#1e293b"/>
+  <text x="848" y="98" fill="#64748b" font-size="12">Porteurs suivis</text>
+  <text x="848" y="130" fill="#f1f5f9" font-size="32" font-weight="700">7</text>
+
+  <!-- Slash commands -->
+  <text x="240" y="186" fill="#f1f5f9" font-size="15" font-weight="600">Commandes rapides</text>
+  <rect x="240" y="196" width="148" height="52" rx="8" fill="#003189" opacity="0.8"/>
+  <text x="264" y="218" fill="white" font-size="12" font-weight="600">/diagnostic</text>
+  <text x="264" y="236" fill="#93c5fd" font-size="11">Éligibilité &amp; cadrage</text>
+
+  <rect x="396" y="196" width="148" height="52" rx="8" fill="#065f46" opacity="0.8"/>
+  <text x="420" y="218" fill="white" font-size="12" font-weight="600">/dossier-feder</text>
+  <text x="420" y="236" fill="#6ee7b7" font-size="11">Workflow complet</text>
+
+  <rect x="552" y="196" width="148" height="52" rx="8" fill="#1e3a5f" opacity="0.8"/>
+  <text x="576" y="218" fill="white" font-size="12" font-weight="600">/checklist</text>
+  <text x="576" y="236" fill="#93c5fd" font-size="11">Pièces justificatives</text>
+
+  <rect x="708" y="196" width="148" height="52" rx="8" fill="#451a03" opacity="0.8"/>
+  <text x="732" y="218" fill="white" font-size="12" font-weight="600">/controle</text>
+  <text x="732" y="236" fill="#fbbf24" font-size="11">Audit conformité</text>
+
+  <rect x="864" y="196" width="148" height="52" rx="8" fill="#312e81" opacity="0.8"/>
+  <text x="888" y="218" fill="white" font-size="12" font-weight="600">/suivi</text>
+  <text x="888" y="236" fill="#a5b4fc" font-size="11">Post-dépôt</text>
+
+  <!-- Dossiers table -->
+  <text x="240" y="284" fill="#f1f5f9" font-size="15" font-weight="600">Dossiers récents</text>
+  <rect x="240" y="294" width="940" height="340" rx="8" fill="#1e293b"/>
+
+  <!-- Table header -->
+  <rect x="240" y="294" width="940" height="36" rx="8" fill="#0f172a"/>
+  <text x="260" y="318" fill="#64748b" font-size="12" font-weight="600">PORTEUR</text>
+  <text x="440" y="318" fill="#64748b" font-size="12" font-weight="600">DISPOSITIF</text>
+  <text x="600" y="318" fill="#64748b" font-size="12" font-weight="600">ÉTAPE</text>
+  <text x="760" y="318" fill="#64748b" font-size="12" font-weight="600">STATUT</text>
+  <text x="900" y="318" fill="#64748b" font-size="12" font-weight="600">PROGRESSION</text>
+
+  <!-- Row 1 -->
+  <rect x="240" y="330" width="940" height="48" fill="#1e293b"/>
+  <text x="260" y="350" fill="#f1f5f9" font-size="13" font-weight="500">Asso Culture MTQ</text>
+  <text x="260" y="367" fill="#64748b" font-size="11">martinique</text>
+  <text x="440" y="358" fill="#f1f5f9" font-size="13">FEDER axe 5.1</text>
+  <text x="600" y="358" fill="#f1f5f9" font-size="13">Contrôle</text>
+  <rect x="756" y="343" width="72" height="22" rx="11" fill="#f59e0b" opacity="0.2"/>
+  <text x="792" y="358" fill="#f59e0b" font-size="12" text-anchor="middle">En cours</text>
+  <rect x="896" y="350" width="100" height="6" rx="3" fill="#334155"/>
+  <rect x="896" y="350" width="75" height="6" rx="3" fill="#f59e0b"/>
+
+  <!-- Row 2 -->
+  <rect x="240" y="378" width="940" height="1" fill="#334155"/>
+  <rect x="240" y="379" width="940" height="48" fill="#1e293b"/>
+  <text x="260" y="399" fill="#f1f5f9" font-size="13" font-weight="500">TPE BTP Guadeloupe</text>
+  <text x="260" y="416" fill="#64748b" font-size="11">guadeloupe</text>
+  <text x="440" y="407" fill="#f1f5f9" font-size="13">FSE+ inclusion</text>
+  <text x="600" y="407" fill="#f1f5f9" font-size="13">Montage</text>
+  <rect x="756" y="392" width="72" height="22" rx="11" fill="#3b82f6" opacity="0.2"/>
+  <text x="792" y="407" fill="#3b82f6" font-size="12" text-anchor="middle">Actif</text>
+  <rect x="896" y="399" width="100" height="6" rx="3" fill="#334155"/>
+  <rect x="896" y="399" width="40" height="6" rx="3" fill="#3b82f6"/>
+
+  <!-- Row 3 -->
+  <rect x="240" y="427" width="940" height="1" fill="#334155"/>
+  <rect x="240" y="428" width="940" height="48" fill="#1e293b"/>
+  <text x="260" y="448" fill="#f1f5f9" font-size="13" font-weight="500">Collectivité ANCT</text>
+  <text x="260" y="465" fill="#64748b" font-size="11">martinique</text>
+  <text x="440" y="456" fill="#f1f5f9" font-size="13">France 2030</text>
+  <text x="600" y="456" fill="#f1f5f9" font-size="13">Suivi</text>
+  <rect x="756" y="441" width="72" height="22" rx="11" fill="#22c55e" opacity="0.2"/>
+  <text x="792" y="456" fill="#22c55e" font-size="12" text-anchor="middle">Déposé</text>
+  <rect x="896" y="448" width="100" height="6" rx="3" fill="#334155"/>
+  <rect x="896" y="448" width="90" height="6" rx="3" fill="#22c55e"/>
+
+  <!-- Footer label -->
+  <text x="600" y="730" fill="#475569" font-size="12" text-anchor="middle">Madin'Admin · Dashboard principal · localhost:3000</text>
+</svg>
