@@ -1,0 +1,58 @@
+<svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+  <rect width="1200" height="600" fill="#0f172a"/>
+  <rect width="1200" height="56" fill="#1e293b"/>
+  <text x="24" y="33" fill="#f1f5f9" font-size="16" font-weight="700">Madin'Admin</text>
+  <text x="200" y="33" fill="#94a3b8" font-size="13">Livrable — Diagnostic d'éligibilité · Asso Culture MTQ</text>
+
+  <!-- Metadata bar -->
+  <rect x="40" y="72" width="1120" height="56" rx="8" fill="#1e293b"/>
+  <text x="60" y="96" fill="#64748b" font-size="11">PORTEUR</text>
+  <text x="60" y="114" fill="#f1f5f9" font-size="13" font-weight="600">asso-culture-mtq</text>
+  <line x1="200" y1="80" x2="200" y2="118" stroke="#334155" stroke-width="1"/>
+  <text x="220" y="96" fill="#64748b" font-size="11">DISPOSITIF</text>
+  <text x="220" y="114" fill="#f1f5f9" font-size="13" font-weight="600">FEDER axe 5.1</text>
+  <line x1="380" y1="80" x2="380" y2="118" stroke="#334155" stroke-width="1"/>
+  <text x="400" y="96" fill="#64748b" font-size="11">AGENT</text>
+  <text x="400" y="114" fill="#3b82f6" font-size="13" font-weight="600">Diagnostiqueur</text>
+  <line x1="540" y1="80" x2="540" y2="118" stroke="#334155" stroke-width="1"/>
+  <text x="560" y="96" fill="#64748b" font-size="11">DATE</text>
+  <text x="560" y="114" fill="#f1f5f9" font-size="13" font-weight="600">2026-05-15</text>
+  <line x1="700" y1="80" x2="700" y2="118" stroke="#334155" stroke-width="1"/>
+  <text x="720" y="96" fill="#64748b" font-size="11">VERSION</text>
+  <text x="720" y="114" fill="#f1f5f9" font-size="13" font-weight="600">v1</text>
+  <line x1="800" y1="80" x2="800" y2="118" stroke="#334155" stroke-width="1"/>
+  <text x="820" y="96" fill="#64748b" font-size="11">STATUT</text>
+  <rect x="820" y="102" width="80" height="20" rx="10" fill="#22c55e" opacity="0.2"/>
+  <text x="860" y="116" fill="#22c55e" font-size="12" text-anchor="middle">validé</text>
+
+  <!-- Markdown viewer -->
+  <rect x="40" y="144" width="1120" height="420" rx="8" fill="#1e293b"/>
+
+  <!-- Markdown content -->
+  <text x="68" y="180" fill="#93c5fd" font-size="20" font-weight="700"># Diagnostic d'éligibilité — Asso Culture MTQ</text>
+  <text x="68" y="208" fill="#64748b" font-size="13">## Résumé exécutif</text>
+  <text x="68" y="232" fill="#cbd5e1" font-size="13">L'association loi 1901 « Culture Martinique » est éligible au FEDER axe 5.1 « Une Martinique plus</text>
+  <text x="68" y="250" fill="#cbd5e1" font-size="13">connectée » pour son projet de transition numérique. Cofinancement maximal : 80%. Montant éligible</text>
+  <text x="68" y="268" fill="#cbd5e1" font-size="13">estimé : 145 000 €.</text>
+
+  <text x="68" y="298" fill="#64748b" font-size="13">## Critères d'éligibilité</text>
+
+  <text x="68" y="322" fill="#22c55e" font-size="13">✓  Structure : Association loi 1901 — éligible dispositif FSE+ et FEDER volets associatifs</text>
+  <text x="68" y="342" fill="#22c55e" font-size="13">✓  Territoire : Martinique — Région ultrapériphérique, taux majoration 20 pts applicable</text>
+  <text x="68" y="362" fill="#22c55e" font-size="13">✓  Secteur : Culture &amp; numérique — convergence axes 5.1/5.2 PO Martinique 2021-2027</text>
+  <text x="68" y="382" fill="#22c55e" font-size="13">✓  Budget : 180 000 € total — seuil minimal 50 000 € atteint, plafond 500 000 € non dépassé</text>
+  <text x="68" y="402" fill="#f59e0b" font-size="13">⚠  Calendrier : démarrage prévu J+45 — vérifier date de clôture de l'appel (31 juillet 2026)</text>
+
+  <text x="68" y="432" fill="#64748b" font-size="13">## Dispositifs recommandés par ordre de priorité</text>
+  <text x="68" y="456" fill="#cbd5e1" font-size="13">1.  FEDER axe 5.1 — Très Haut Débit &amp; usages numériques (cofinancement 80%, priorité haute)</text>
+  <text x="68" y="476" fill="#cbd5e1" font-size="13">2.  FSE+ inclusion numérique — si public cible élargi aux bénéficiaires en insertion (60%)</text>
+  <text x="68" y="496" fill="#cbd5e1" font-size="13">3.  Appel CTM Culture &amp; Innovation — cumulable sous conditions, vérifier règle de non-cumul</text>
+
+  <!-- Action bar -->
+  <rect x="900" y="508" width="140" height="36" rx="6" fill="#003189"/>
+  <text x="970" y="531" fill="white" font-size="13" text-anchor="middle">↓  Exporter PDF</text>
+  <rect x="1052" y="508" width="100" height="36" rx="6" fill="#334155"/>
+  <text x="1102" y="531" fill="#94a3b8" font-size="13" text-anchor="middle">Suivant →</text>
+
+  <text x="600" y="585" fill="#475569" font-size="12" text-anchor="middle">Madin'Admin · Visualiseur de livrable markdown avec frontmatter YAML</text>
+</svg>

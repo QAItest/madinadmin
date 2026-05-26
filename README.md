@@ -1,19 +1,17 @@
-# Madin'Admin Platform
+# Madin'Admin
 
-Plateforme multi-agent administrative adaptee a ChatGPT/OpenAI pour le montage, la conformite, le suivi et l'archivage de dossiers FEDER, FSE+ et dispositifs publics ultramarins.
+Plateforme multi-agent d'assistance administrative pour le montage, la conformite, le suivi et l'archivage de dossiers FEDER, FSE+ et dispositifs publics ultramarins.
 
-## Objectif
+## Etat fusionne
 
-Le projet organise une chaine auditable d'agents specialises autour de livrables Markdown versionnes : diagnostic, montage du dossier, checklist documentaire, controle de conformite, suivi post-depot et archivage.
+Ce depot contient maintenant deux couches issues de deux historiques Git fusionnes :
 
-## Stack prevue
+- **Racine du depot** : MVP Next.js local inspire de `madin-admin-mvp.jsx`, adapte a ChatGPT/OpenAI, avec stockage fichier local et fallback sans cle API.
+- **Architecture distante ajoutee par `origin/master`** : orchestration Claude Code, backend FastAPI/PostgreSQL, dashboard Next.js separe dans `madin-admin-platform/`, documentation et screenshots SVG.
 
-- Dashboard web : Next.js 16, React, AI SDK OpenAI, gray-matter, generation PDF via Puppeteer.
-- Backend : FastAPI pour les integrations e-Synergie, Demarches-Simplifiees, OCR et signature.
-- Agents : fichiers `.chatgpt/agents/*.md` et commandes `.chatgpt/commands/*.md`.
-- Memoire porteur : fichiers Markdown dans `porteurs/{porteur}/`.
+## MVP local a la racine
 
-## Demarrage
+### Demarrage
 
 ```bash
 npm install
@@ -22,40 +20,64 @@ npm run dev
 
 Ouvrir ensuite `http://localhost:3000`.
 
-## Fonctionnalites implementees
+### Fonctionnalites
 
-- Creation d'un porteur avec memoire locale dans `porteurs/{porteur}/`.
-- Dashboard de suivi des 6 etapes : diagnostic, montage, checklist, controle, suivi, archivage.
-- Generation de livrables Markdown versionnes dans les dossiers metier.
-- Enchainement sequentiel : une etape devient disponible apres production de la precedente.
-- Routes API Next.js pour creer les porteurs et lancer les agents.
-- Mode fallback local sans cle API, utile pour tester le workflow.
-- Mode OpenAI actif automatiquement quand `OPENAI_API_KEY` est renseignee.
+- Creation d'un porteur.
+- Timeline des 6 agents : Diagnostiqueur, Monteur, Documentaliste, Controleur, Suiveur, Archiviste.
+- Generation de livrables Markdown versionnes.
+- Journal de progression et visualisation du livrable.
+- Mode OpenAI si `OPENAI_API_KEY` est renseignee.
+- Mode fallback local si aucune cle API n'est configuree.
 
-API Python :
+## Architecture distante ajoutee
+
+### Orchestration Claude Code
+
+- `CLAUDE.md`
+- `.claude/agents/*.md`
+- `.claude/commands/*.md`
+
+Agents inclus : Diagnostiqueur, Monteur, Documentaliste, Controleur, Suiveur, Archiviste, Veilleur, OCR, Courrier.
+
+### Backend FastAPI
 
 ```bash
-python -m venv .venv
-.venv\Scripts\activate
+cd backend
 pip install -r requirements.txt
-uvicorn api.main:app --reload --port 8000
+uvicorn main:app --reload
 ```
 
-## Configuration OpenAI
+API : `http://localhost:8000`
 
-Copier `.env.example` vers `.env.local`, puis renseigner :
+### PostgreSQL et pgAdmin
 
-```env
-OPENAI_API_KEY=sk-...
-OPENAI_MODEL_ORCHESTRATOR=gpt-5.2
-OPENAI_MODEL_AGENT=gpt-5.4-mini
-OPENAI_MODEL_AUDIT=gpt-5.2
+```bash
+docker compose up -d
 ```
+
+- PostgreSQL : `localhost:5432`
+- pgAdmin : `http://localhost:5050`
+
+### Dashboard distant
+
+```bash
+cd madin-admin-platform
+npm install
+npm run dev
+```
+
+## Variables d'environnement
+
+Copier `.env.example` vers `.env`, puis renseigner les cles utiles selon le mode utilise :
+
+- `OPENAI_API_KEY` pour le MVP local ChatGPT/OpenAI.
+- `ANTHROPIC_API_KEY` pour l'architecture Claude/Anthropic.
+- `DATABASE_URL` pour le backend PostgreSQL.
 
 ## Regles bloquantes
 
 - Ne jamais inventer de chiffres, criteres, dates, financements ou pieces.
-- Ne jamais deposer un dossier automatiquement a la place du porteur.
+- Ne jamais deposer automatiquement a la place du porteur.
 - Ne jamais signer ou engager juridiquement le porteur.
 - Chaque livrable doit contenir le frontmatter YAML obligatoire.
 - Cloisonnement strict des donnees par porteur.

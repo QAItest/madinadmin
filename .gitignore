@@ -9,9 +9,12 @@ __pycache__/
 .DS_Store
 Thumbs.db
 *.log
+
+# Local generated data from the root MVP dashboard
 .data/
 porteurs/*/
 !porteurs/_template/
+!porteurs/template/
 diagnostics/*.md
 dossiers/*.md
 checklists/*.md
