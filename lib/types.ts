@@ -8,8 +8,11 @@ export type AgentKey =
 
 export type StepStatus = "pending" | "ready" | "done" | "blocked";
 
+export type ModuleKey = "financement" | "energie";
+
 export type Porteur = {
   id: string;
+  module?: ModuleKey;
   name: string;
   territory: string;
   structure: string;
@@ -46,6 +49,7 @@ export type DashboardData = {
 };
 
 export type CreatePorteurInput = {
+  module?: ModuleKey;
   name: string;
   territory: string;
   structure: string;

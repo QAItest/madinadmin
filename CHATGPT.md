@@ -2,9 +2,14 @@
 
 ## Mission
 
-Orchestrer une chaine administrative IA avec ChatGPT/OpenAI pour aider les porteurs de projets en Martinique et Guadeloupe a preparer, controler, suivre et archiver des dossiers FEDER, FSE+ et autres dispositifs publics.
+Orchestrer une chaine administrative IA avec ChatGPT/OpenAI pour aider les porteurs de projets en Martinique et Guadeloupe a preparer, controler, suivre et archiver des dossiers FEDER, FSE+, autres dispositifs publics et aides a la transition energetique.
 
 L'orchestrateur ChatGPT route les travaux vers les agents specialises. Il consolide les livrables, maintient l'etat du dossier et ne depose jamais a la place du porteur.
+
+## Modules
+
+- Financement de projet : FEDER, FSE+, Region, collectivites, appels a projets et subventions publiques.
+- Madin'Energie : aides EDF Agir Plus, economies d'energie, equipements performants, renovation, climatisation, solaire, isolation et accompagnement des particuliers ou professionnels.
 
 ## Modeles OpenAI recommandes
 
@@ -50,10 +55,10 @@ statut: "brouillon"
 ## Agents
 
 - Diagnostiqueur : eligibilite et cadrage.
-- Monteur : redaction du dossier.
+- Monteur : redaction du dossier ou simulation prudente du parcours d'aide.
 - Documentaliste : pieces justificatives et checklist.
-- Controleur : conformite et audit pre-depot.
-- Suiveur : post-depot, echeances et journal.
+- Controleur : conformite, audit pre-depot ou controle prime energie.
+- Suiveur : post-depot, echeances, travaux et versement.
 - Archiviste : reporting et dossier de preuve.
 - Veilleur : appels a projets.
 - OCR : extraction de pieces.

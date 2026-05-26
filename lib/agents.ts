@@ -19,10 +19,42 @@ const systems: Record<AgentKey, string> = {
     "Tu es l'Archiviste Madin'Admin. Produis reporting, tracabilite decisionnelle et dossier de preuve conservable."
 };
 
+function isEnergyDossier(porteur: Porteur) {
+  return (
+    porteur.module === "energie" ||
+    /energie|agir plus|edf/i.test(`${porteur.dispositif} ${porteur.project}`)
+  );
+}
+
 function localDraft(porteur: Porteur, agent: AgentKey, livrables: Livrable[]) {
   const previous = livrables.map((item) => `- ${item.title}: ${item.path}`).join("\n") || "- Aucun livrable precedent.";
+  const energy = isEnergyDossier(porteur);
 
-  const common = `${renderFrontmatter(porteur, agent)}\n\n# ${workflowTitle(agent)}\n\n## Sources lues\n\n- Profil porteur: porteurs/${porteur.id}/profil.md\n${previous}\n\n## Donnees porteur\n\n- Structure: ${porteur.structure || "Donnee manquante"}\n- Territoire: ${porteur.territory || "Donnee manquante"}\n- Projet: ${porteur.project || "Donnee manquante"}\n- Dispositif vise: ${porteur.dispositif || "Donnee manquante"}\n- Budget declare: ${porteur.budget || "Donnee manquante"}\n- Date cible: ${porteur.deadline || "Donnee manquante"}\n`;
+  const common = `${renderFrontmatter(porteur, agent)}\n\n# ${workflowTitle(agent)}\n\n## Sources lues\n\n- Profil porteur: porteurs/${porteur.id}/profil.md\n${previous}\n\n## Donnees porteur\n\n- Module: ${energy ? "Madin'Energie" : "Financement de projet"}\n- Structure: ${porteur.structure || "Donnee manquante"}\n- Territoire: ${porteur.territory || "Donnee manquante"}\n- Projet: ${porteur.project || "Donnee manquante"}\n- Dispositif vise: ${porteur.dispositif || "Donnee manquante"}\n- Budget declare: ${porteur.budget || "Donnee manquante"}\n- Date cible: ${porteur.deadline || "Donnee manquante"}\n`;
+
+  if (energy) {
+    if (agent === "diagnostiqueur") {
+      return `${common}\n## Diagnostic energetique simple\n\nStatut provisoire: a qualifier.\n\nLe dossier Madin'Energie doit d'abord identifier le profil d'usage, le type de batiment, les postes de consommation et les travaux envisages. Les aides EDF Agir Plus applicables ne doivent pas etre confirmees sans fiche d'offre a jour, devis et conditions d'eligibilite verifiees.\n\n## Donnees manquantes\n\n- Factures EDF recentes ou historique de consommation.\n- Type de local: logement, commerce, hotel, industrie, collectivite ou bailleur.\n- Surface, usages principaux et equipements existants.\n- Travaux envisages: climatisation performante, isolation, solaire, renovation, eau chaude, pilotage ou autre.\n- Devis ou contact d'un installateur local qualifie.\n\n## Prochaines actions\n\n1. Qualifier le batiment et les usages.\n2. Collecter factures, photos, devis et fiches techniques.\n3. Verifier l'offre Agir Plus applicable avant toute estimation de prime.\n`;
+    }
+
+    if (agent === "monteur") {
+      return `${common}\n## Parcours aides energie\n\nObjectif: preparer un dossier d'aide a la maitrise de l'energie pour reduire la facture et financer des equipements performants.\n\n## Simulation a completer\n\n- Montant potentiel de prime: a calculer apres verification de la fiche Agir Plus applicable.\n- Economies estimees: a etablir a partir de la consommation actuelle, de l'equipement remplace et du devis.\n- Reste a charge: budget declare moins aides confirmees et cofinancements eventuels.\n\n## Sections du dossier\n\n### Situation initiale\n\nConsommations, contraintes du batiment, usages, inconfort ou surcouts constates.\n\n### Travaux envisages\n\nEquipement, performance attendue, installateur, calendrier et garanties.\n\n### Gains attendus\n\nEconomies d'energie, baisse de facture, confort, maintenance et impact environnemental.\n\n## Points de vigilance\n\nAucun montant de prime ne doit etre presente comme acquis sans confirmation officielle et pieces justificatives.\n`;
+    }
+
+    if (agent === "documentaliste") {
+      return `${common}\n## Checklist Madin'Energie\n\n- Piece d'identite ou justificatif legal de la structure.\n- Justificatif d'adresse du site concerne.\n- Factures EDF recentes.\n- RIB.\n- Devis detaille de l'installateur.\n- Fiche technique des equipements proposes.\n- Photos de l'existant si disponibles.\n- Attestation ou qualification de l'installateur si exigee par l'offre.\n- Facture acquittee et attestation de fin de travaux apres realisation.\n\n## Pieces specifiques professionnels\n\n- K-bis, SIRET ou justificatif d'activite.\n- Autorisation du proprietaire ou mandat si le demandeur n'est pas proprietaire.\n- Donnees de consommation du local ou batiment.\n`;
+    }
+
+    if (agent === "controleur") {
+      return `${common}\n## Synthese de conformite energie\n\nStatut: orange.\n\n## Controles\n\n- Coherence besoin/travaux: orange, usage du batiment a documenter.\n- Offre Agir Plus applicable: orange, fiche d'offre a joindre.\n- Devis et equipement: orange, performances et references a verifier.\n- Installateur: orange, qualification ou partenariat local a confirmer.\n- Preuves post-travaux: orange, facture et attestation indispensables.\n\n## Decision\n\nValidation impossible tant que l'offre applicable, le devis et les justificatifs ne sont pas confirmes.\n`;
+    }
+
+    if (agent === "suiveur") {
+      return `${common}\n## Suivi du dossier energie\n\nAucun depot ou versement declare dans la plateforme.\n\n## Jalons\n\n- Diagnostic et collecte des consommations.\n- Choix de l'offre Agir Plus applicable.\n- Devis valide par le demandeur.\n- Realisation des travaux.\n- Depot des justificatifs finaux.\n- Suivi du versement de la prime.\n\n## Rappels\n\nProgrammer des relances pour devis, facture, attestation de fin de travaux et verification du versement.\n`;
+    }
+
+    return `${common}\n## Dossier de preuve energie\n\nLe dossier de preuve doit conserver les factures EDF, devis, fiches techniques, photos, attestations, factures acquittees, preuves de depot et notifications de prime.\n\n## Tableau de bord economique\n\n- Economies estimees: a calculer apres diagnostic.\n- Prime estimee: a confirmer par fiche officielle.\n- Reste a charge: a calculer apres devis et aide confirmee.\n- Statut versement: non renseigne.\n\n## Tracabilite\n\nChaque economie annoncee doit pointer vers une hypothese, une facture ou une piece source.\n`;
+  }
 
   if (agent === "diagnostiqueur") {
     return `${common}\n## Analyse d'eligibilite\n\nStatut provisoire: a qualifier.\n\nLe dossier peut etre instruit seulement apres verification des criteres durs du dispositif vise, de la zone d'eligibilite, du calendrier, du regime d'aide applicable et des justificatifs juridiques du porteur.\n\n## Donnees manquantes\n\n- Texte officiel de l'appel a projets ou fiche dispositif applicable.\n- Statuts juridiques verifies du porteur.\n- Budget detaille par poste et devis associes.\n- Plan de financement et cofinancements confirmes.\n\n## Prochaines actions\n\n1. Joindre la fiche dispositif.\n2. Completer les statuts et pieces administratives.\n3. Valider le budget eligible avant redaction du dossier.\n`;
@@ -66,7 +98,9 @@ export async function runAgent(porteurId: string, agent: AgentKey) {
         excerpt: item.content.slice(0, 5000)
       })),
       output_contract:
-        "Retourne un livrable Markdown complet avec sections Sources lues, Analyse, Points de vigilance et Prochaines actions. Inclure le frontmatter YAML fourni sans le modifier.",
+        isEnergyDossier(porteur)
+          ? "Retourne un livrable Markdown complet pour le module Madin'Energie avec sections Sources lues, Diagnostic energie, Aides applicables, Pieces, Points de vigilance et Prochaines actions. Ne jamais inventer de montant de prime ou de critere EDF. Inclure le frontmatter YAML fourni sans le modifier."
+          : "Retourne un livrable Markdown complet avec sections Sources lues, Analyse, Points de vigilance et Prochaines actions. Inclure le frontmatter YAML fourni sans le modifier.",
       frontmatter: renderFrontmatter(porteur, agent)
     };
 

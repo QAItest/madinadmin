@@ -14,6 +14,7 @@ export async function POST(request: Request) {
   }
 
   const porteur = await createPorteur({
+    module: body.module ?? "financement",
     name: body.name,
     territory: body.territory ?? "",
     structure: body.structure,

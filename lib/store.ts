@@ -69,6 +69,7 @@ export async function createPorteur(input: CreatePorteurInput): Promise<Porteur>
   const uniqueId = existing.some((porteur) => porteur.id === id) ? `${id}-${Date.now()}` : id;
   const porteur: Porteur = {
     id: uniqueId,
+    module: input.module ?? "financement",
     name: input.name.trim(),
     territory: input.territory.trim(),
     structure: input.structure.trim(),
@@ -84,7 +85,7 @@ export async function createPorteur(input: CreatePorteurInput): Promise<Porteur>
   await mkdir(porteurDir, { recursive: true });
   await writeFile(
     path.join(porteurDir, "profil.md"),
-    `---\nporteur: "${porteur.name}"\nterritoire: "${porteur.territory}"\nstatut: "actif"\n---\n\n# ${porteur.name}\n\n## Structure\n\n${porteur.structure}\n\n## Projet\n\n${porteur.project}\n\n## Dispositif vise\n\n${porteur.dispositif}\n\n## Budget declare\n\n${porteur.budget || "Donnee manquante"}\n\n## Date cible\n\n${porteur.deadline || "Donnee manquante"}\n`,
+    `---\nporteur: "${porteur.name}"\nmodule: "${porteur.module}"\nterritoire: "${porteur.territory}"\nstatut: "actif"\n---\n\n# ${porteur.name}\n\n## Structure\n\n${porteur.structure}\n\n## Projet\n\n${porteur.project}\n\n## Module\n\n${porteur.module === "energie" ? "Madin'Energie" : "Financement de projet"}\n\n## Dispositif vise\n\n${porteur.dispositif}\n\n## Budget declare\n\n${porteur.budget || "Donnee manquante"}\n\n## Date cible\n\n${porteur.deadline || "Donnee manquante"}\n`,
     "utf8"
   );
   await writeFile(path.join(porteurDir, "statuts.md"), "# Statuts\n\nDonnees juridiques a completer.\n", "utf8");
@@ -189,5 +190,5 @@ export async function getDashboardData(selectedId?: string): Promise<DashboardDa
 }
 
 export function renderFrontmatter(porteur: Porteur, agent: AgentKey, statut = "brouillon") {
-  return `---\nporteur: "${porteur.name}"\ndispositif: "${porteur.dispositif}"\ndossier: "${porteur.id}"\nagent: "${agent}"\ndate: "${today()}"\nversion: "v0.1"\nstatut: "${statut}"\n---`;
+  return `---\nporteur: "${porteur.name}"\nmodule: "${porteur.module ?? "financement"}"\ndispositif: "${porteur.dispositif}"\ndossier: "${porteur.id}"\nagent: "${agent}"\ndate: "${today()}"\nversion: "v0.1"\nstatut: "${statut}"\n---`;
 }

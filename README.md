@@ -1,6 +1,6 @@
 # Madin'Admin
 
-Plateforme multi-agent d'assistance administrative pour le montage, la conformite, le suivi et l'archivage de dossiers FEDER, FSE+ et dispositifs publics ultramarins.
+Plateforme multi-agent d'assistance administrative pour le montage, la conformite, le suivi et l'archivage de dossiers FEDER, FSE+, dispositifs publics ultramarins et aides a la transition energetique.
 
 ## Etat fusionne
 
@@ -23,11 +23,25 @@ Ouvrir ensuite `http://localhost:3000`.
 ### Fonctionnalites
 
 - Creation d'un porteur.
+- Choix du module : financement de projet ou Madin'Energie.
 - Timeline des 6 agents : Diagnostiqueur, Monteur, Documentaliste, Controleur, Suiveur, Archiviste.
 - Generation de livrables Markdown versionnes.
 - Journal de progression et visualisation du livrable.
 - Mode OpenAI si `OPENAI_API_KEY` est renseignee.
 - Mode fallback local si aucune cle API n'est configuree.
+
+### Module Madin'Energie
+
+Madin'Energie guide les menages, entreprises, collectivites, bailleurs et partenaires locaux sur les aides a la maitrise de l'energie, notamment les parcours EDF Agir Plus a verifier au cas par cas.
+
+Le module couvre :
+
+- diagnostic energetique simple du logement, local ou batiment ;
+- identification des aides energie applicables ;
+- simulation prudente de prime et d'economies, sans montant invente ;
+- checklist des factures, devis, fiches techniques, attestations et preuves ;
+- suivi des travaux, du depot justificatif et du versement ;
+- archivage des factures, devis, attestations et elements de preuve.
 
 ## Architecture distante ajoutee
 

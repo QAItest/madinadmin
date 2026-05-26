@@ -1,13 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { AgentKey, DashboardData } from "../lib/types";
+import type { AgentKey, DashboardData, ModuleKey } from "../lib/types";
 
 type Props = {
   initialData: DashboardData;
 };
 
-const agents: Array<{ key: AgentKey; nom: string; role: string }> = [
+const agentsFinancement: Array<{ key: AgentKey; nom: string; role: string }> = [
   { key: "diagnostiqueur", nom: "Diagnostiqueur", role: "Eligibilite" },
   { key: "monteur", nom: "Monteur", role: "Redaction" },
   { key: "documentaliste", nom: "Documentaliste", role: "Checklist" },
@@ -15,6 +15,19 @@ const agents: Array<{ key: AgentKey; nom: string; role: string }> = [
   { key: "suiveur", nom: "Suiveur", role: "Post-depot" },
   { key: "archiviste", nom: "Archiviste", role: "Reporting" }
 ];
+
+const agentsEnergie: Array<{ key: AgentKey; nom: string; role: string }> = [
+  { key: "diagnostiqueur", nom: "Diagnostic energie", role: "Besoin & usage" },
+  { key: "monteur", nom: "Aides Agir Plus", role: "Simulation" },
+  { key: "documentaliste", nom: "Pieces energie", role: "Checklist" },
+  { key: "controleur", nom: "Controle prime", role: "Eligibilite" },
+  { key: "suiveur", nom: "Suivi travaux", role: "Versement" },
+  { key: "archiviste", nom: "Preuves energie", role: "Factures" }
+];
+
+function moduleLabel(module?: ModuleKey) {
+  return module === "energie" ? "Madin'Energie" : "Financement de projet";
+}
 
 export function MadinDashboard({ initialData }: Props) {
   const [data, setData] = useState(initialData);
@@ -29,6 +42,8 @@ export function MadinDashboard({ initialData }: Props) {
     [activeLivrable, data.livrables]
   );
   const completedSteps = data.steps.filter((step) => step.status === "done").length;
+  const selectedModule = data.selected?.module ?? "financement";
+  const agents = selectedModule === "energie" ? agentsEnergie : agentsFinancement;
 
   async function refresh(porteurId = selectedId) {
     const response = await fetch(`/api/porteurs?selected=${encodeURIComponent(porteurId)}`, { cache: "no-store" });
@@ -43,24 +58,30 @@ export function MadinDashboard({ initialData }: Props) {
     setMessage(undefined);
     try {
       const fields = Object.fromEntries(formData);
+      const module = fields.module === "energie" ? "energie" : "financement";
+      const dispositif = module === "energie" ? "Madin'Energie - EDF Agir Plus" : "FEDER";
       const response = await fetch("/api/porteurs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          module,
           name: fields.name,
           structure: fields.structure,
-          dispositif: "FEDER",
+          dispositif,
           budget: fields.budget,
           territory: "Martinique",
           deadline: "",
-          project: `Dossier FEDER pour ${fields.name}`
+          project:
+            module === "energie"
+              ? `Diagnostic energie et aides EDF Agir Plus pour ${fields.name}`
+              : `Dossier FEDER pour ${fields.name}`
         })
       });
       if (!response.ok) throw new Error(await response.text());
       const created = await response.json();
       await refresh(created.id);
       setShowCreate(false);
-      setMessage("Dossier cree. Lancez le diagnostic multi-agents.");
+      setMessage("Dossier cree. Lancez le parcours multi-agents.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Creation impossible.");
     } finally {
@@ -104,14 +125,14 @@ export function MadinDashboard({ initialData }: Props) {
           <strong>Madin'Admin</strong>
           <span>Plateforme d'assistance administrative IA - Martinique & Guadeloupe</span>
         </div>
-        <p>Orchestrateur multi-agents pour dossiers FEDER, FSE+ et dispositifs publics</p>
+        <p>Orchestrateur multi-agents pour financements publics et transition energetique</p>
       </header>
 
       {message ? <div className="notice">{message}</div> : null}
 
       {showCreate ? (
         <section className="create-card">
-          <h1>Creer un nouveau dossier FEDER</h1>
+          <h1>Creer un nouveau dossier</h1>
           <form
             className="form"
             onSubmit={(event) => {
@@ -121,8 +142,15 @@ export function MadinDashboard({ initialData }: Props) {
             }}
           >
             <label>
+              Module
+              <select name="module" defaultValue="financement">
+                <option value="financement">Financement de projet</option>
+                <option value="energie">Madin'Energie - aides EDF Agir Plus</option>
+              </select>
+            </label>
+            <label>
               Nom du porteur
-              <input name="name" required placeholder="ex: Association Culturelle La Mariniere" />
+              <input name="name" required placeholder="ex: Residence Les Alizes" />
             </label>
             <label>
               Type de structure
@@ -131,15 +159,19 @@ export function MadinDashboard({ initialData }: Props) {
                 <option>PME</option>
                 <option>Association loi 1901</option>
                 <option>Collectivite territoriale</option>
+                <option>Menage</option>
+                <option>Hotel / commerce</option>
+                <option>Bailleur social</option>
+                <option>Installateur partenaire</option>
                 <option>SCIC</option>
               </select>
             </label>
             <label>
-              Budget previsionnel
+              Budget ou estimation travaux
               <input name="budget" required placeholder="ex: 150000" type="number" />
             </label>
             <button type="submit" disabled={busy === "create"}>
-              {busy === "create" ? "Creation en cours..." : "Lancer le diagnostic multi-agents"}
+              {busy === "create" ? "Creation en cours..." : "Lancer le parcours multi-agents"}
             </button>
           </form>
           {data.porteurs.length > 0 ? (
@@ -167,6 +199,9 @@ export function MadinDashboard({ initialData }: Props) {
             <div className="dossier-meta">
               <div>
                 <span>Structure:</span> {data.selected?.structure ?? "-"}
+              </div>
+              <div>
+                <span>Module:</span> {moduleLabel(selectedModule)}
               </div>
               <div>
                 <span>Dispositif:</span> {data.selected?.dispositif ?? "FEDER"}
