@@ -19,6 +19,7 @@ Madin'Admin est une chaîne de 9 agents IA spécialisés orchestrée par Claude 
 | **Orchestrateur** | Claude Code (Opus 4.7, 1M context) |
 | **Agents métier** | 6 agents spécialisés (Diagnostiqueur, Monteur, Documentaliste, Contrôleur, Suiveur, Archiviste) |
 | **Agents support** | 3 agents (Veilleur, OCR, Courrier) |
+| **Slash commands** | 13 commandes (6 cœur de métier + 3 prospection porteur + 4 amélioration & investigation) |
 | **Backend** | FastAPI · Python · PostgreSQL (Docker) |
 | **Dashboard** | Next.js 16 · Anthropic AI SDK · Tailwind CSS |
 
@@ -97,7 +98,7 @@ Chaque livrable produit par un agent est affiché avec son frontmatter YAML comp
 |---|---|---|
 | **Claude Code** | Orchestrateur | Lit `CLAUDE.md`, route vers les sous-agents, consolide les livrables |
 | **Sous-agents** | 9 agents métier + support | Définis dans `.claude/agents/*.md` — Opus 4.7 / Sonnet 4.6 |
-| **Slash commands** | Raccourcis utilisateur | `/diagnostic` `/dossier-feder` `/checklist` `/controle` `/suivi` `/archive` |
+| **Slash commands** | 13 raccourcis utilisateur | 6 cœur de métier · 3 prospection porteur · 4 amélioration & investigation |
 | **Dashboard Next.js** | Interface porteur | Next.js 16 · App Router · React 19 · Tailwind · Anthropic AI SDK |
 | **Backend FastAPI** | API & persistance | FastAPI · SQLAlchemy · PostgreSQL · port 8000 |
 | **Base de données** | PostgreSQL 16 | Docker · tables : porteurs, dossiers, livrables, echeances, journal |
@@ -194,6 +195,8 @@ claude
 
 ## Utilisation — Slash commands
 
+### Commandes cœur de métier
+
 ### `/diagnostic {porteur} {description}`
 
 Lance le Diagnostiqueur sur un nouveau porteur.
@@ -266,6 +269,104 @@ Génère le rapport d'avancement et le dossier de preuve.
 
 ---
 
+### Commandes de prospection porteur
+
+> Ces skills sont adaptés de [ai-sales-team-claude](https://github.com/zubair-trabzada/ai-sales-team-claude) et [ai-marketing-skills](https://github.com/ericosiu/ai-marketing-skills).
+
+### `/porteur-research {porteur} [--url {site}] [--siret {n}]`
+
+Recherche multi-sources sur une structure : identité légale, capacité financière, gouvernance, historique de financement, signaux d'alerte. Produit une fiche structurée avec sources annotées et score de complétude.
+
+```
+/porteur-research association-sport-guadeloupe --url https://asso-sport-gp.fr --siret 79482736100018
+```
+
+**Livrable :** `porteurs/{porteur}/porteur-research.md`
+
+---
+
+### `/porteur-prospect {porteur} [--url {site}]`
+
+Lance 5 sous-agents en parallèle (structure, finances, viabilité projet, conformité préliminaire, dispositifs disponibles) pour produire un **Score Porteur 0-100** avec grade A/B/C/D.
+
+```
+/porteur-prospect association-sport-guadeloupe --url https://asso-sport-gp.fr
+```
+
+| Grade | Score | Décision |
+|-------|-------|----------|
+| A | 80-100 | Lancer `/diagnostic` immédiatement |
+| B | 60-79 | Renforcer le profil, puis `/diagnostic` |
+| C | 40-59 | Travailler les conditions d'éligibilité |
+| D | 0-39 | Orienter vers d'autres financements |
+
+**Livrable :** `porteurs/{porteur}/PORTEUR-PROSPECT.md`
+
+---
+
+### `/porteur-dossier {porteur} [--cascade] [--batch {csv}]`
+
+Constitution complète du profil porteur avec enrichissement en cascade (site web → journal officiel → Sirene → data.gouv). Mode `--batch` pour traiter plusieurs porteurs depuis un CSV.
+
+```
+/porteur-dossier association-sport-guadeloupe --cascade
+/porteur-dossier --batch porteurs/batch-import-2025-01.csv
+```
+
+**Livrables :** `porteurs/{porteur}/profil.md` · `porteur-research.md` · `questions-porteur.md`
+
+---
+
+### Commandes d'amélioration & investigation
+
+> Ces skills sont adaptés de [oh-my-claudecode](https://github.com/Yeachan-Heo/oh-my-claudecode).
+
+### `/plan {porteur} {objectif} [--direct] [--consensus]`
+
+Planification stratégique d'un dossier. Trois modes : **interview** (questions ciblées pour cadrer), **direct** (plan immédiat), **consensus** (boucle Planificateur → Architecte → Critique avec ADR, recommandé pour dossiers > 200 000 €).
+
+```
+/plan association-sport-guadeloupe "monter dossier FEDER axe 3 en 6 semaines, budget 180 000 €" --consensus
+```
+
+---
+
+### `/deep-dive {porteur} {dossier} {problème}`
+
+Investigation causale approfondie quand un dossier a des items rouges inexpliqués ou un rejet incompris. Lance 3 lanes d'analyse parallèles (technique, réglementaire, artefacts), puis un entretien structuré pour identifier les causes racines.
+
+```
+/deep-dive tpe-durand-sarl 2025-01-15-tpe-durand-feder-axe2 "items rouges sur indicateurs et taux cofinancement"
+```
+
+**Livrable :** `.omc/specs/deep-dive-trace-{dossier}.md` + plan de correction priorisé
+
+---
+
+### `/autoresearch {porteur} {dossier} [--section {s}] [--max-iterations {n}]`
+
+Boucle d'amélioration itérative sur une section de dossier. À chaque tour : réécriture (Monteur) → évaluation (Contrôleur) → JSON de score → log de décision. S'arrête quand `score ≥ 85` ou `max-iterations` atteint.
+
+```
+/autoresearch tpe-durand-sarl 2025-01-15-tpe-durand-feder-axe2 --section 04-budget --max-iterations 4
+```
+
+**Artefacts :** `.omc/autoresearch/{dossier}/runs/{run-id}/decision-log.md`
+
+---
+
+### `/content-eval {porteur} {dossier} [--section {s}] [--target {score}]`
+
+Panel de 7-10 experts auto-assemblés selon le type de section (conformité FEDER x1.5, cohérence interne x1.5, plus experts thématiques). Note le contenu, identifie les 3 points faibles, propose des corrections, itère jusqu'au score cible (défaut : 85/100) ou 3 tours max.
+
+```
+/content-eval tpe-durand-sarl 2025-01-15-tpe-durand-feder-axe2 --section 07-indicateurs --target 90
+```
+
+**Livrables :** section mise à jour (version incrémentée) · `dossiers/{dossier}/eval-{section}-{date}.md`
+
+---
+
 ## API Backend
 
 Documentation interactive : **http://localhost:8000/docs**
@@ -302,13 +403,20 @@ madinadmin/
 │   │   ├── veilleur.md               # Opus 4.7
 │   │   ├── ocr.md                    # Sonnet 4.6
 │   │   └── courrier.md               # Sonnet 4.6
-│   └── commands/                     # 6 slash commands
-│       ├── diagnostic.md
+│   └── commands/                     # 13 slash commands
+│       ├── diagnostic.md             # Cœur de métier
 │       ├── dossier-feder.md
 │       ├── checklist.md
 │       ├── controle.md
 │       ├── suivi.md
-│       └── archive.md
+│       ├── archive.md
+│       ├── porteur-research.md       # Prospection porteur
+│       ├── porteur-prospect.md
+│       ├── porteur-dossier.md
+│       ├── plan.md                   # Amélioration & investigation
+│       ├── deep-dive.md
+│       ├── autoresearch.md
+│       └── content-eval.md
 │
 ├── backend/                          # FastAPI
 │   ├── main.py
@@ -367,14 +475,19 @@ Ces règles sont bloquantes pour tous les agents — elles ne peuvent pas être 
 
 ## Économie unitaire (estimations)
 
-| Livrable | Agent | Coût indicatif |
+| Livrable | Agent / Commande | Coût indicatif |
 |---|---|---|
-| Diagnostic d'éligibilité complet | Diagnostiqueur (Opus) | ~1,80 € |
-| Montage dossier FEDER 25-30 pages | Monteur (Sonnet) | ~4,50 € |
-| Checklist personnalisée + OCR pièces | Documentaliste + OCR | ~2,20 € |
-| Rapport de conformité pré-dépôt | Contrôleur (Opus) | ~8,00 € |
-| Suivi mensuel (échéances + journal) | Suiveur (Sonnet) | ~3,50 € |
-| Dossier de preuve + rapport annuel | Archiviste (Opus) | ~6,00 € |
+| Diagnostic d'éligibilité complet | Diagnostiqueur (Opus) · `/diagnostic` | ~1,80 € |
+| Montage dossier FEDER 25-30 pages | Monteur (Sonnet) · `/dossier-feder` | ~4,50 € |
+| Checklist personnalisée + OCR pièces | Documentaliste + OCR · `/checklist` | ~2,20 € |
+| Rapport de conformité pré-dépôt | Contrôleur (Opus) · `/controle` | ~8,00 € |
+| Suivi mensuel (échéances + journal) | Suiveur (Sonnet) · `/suivi` | ~3,50 € |
+| Dossier de preuve + rapport annuel | Archiviste (Opus) · `/archive` | ~6,00 € |
+| Recherche & profil porteur | Multi-sources · `/porteur-research` | ~0,60 € |
+| Score porteur 5 sous-agents parallèles | Multi-agents · `/porteur-prospect` | ~1,20 € |
+| Boucle amélioration itérative (4 tours) | Monteur + Contrôleur · `/autoresearch` | ~3,00 € |
+| Évaluation panel experts (3 tours) | 7-10 experts · `/content-eval` | ~2,50 € |
+| Investigation causale approfondie | 3 lanes · `/deep-dive` | ~2,80 € |
 | **Dossier FEDER complet** | **Tous agents** | **~35 €** |
 
 *Coûts API Anthropic uniquement, hors OCR tiers, hors hébergement, hors temps humain.*
