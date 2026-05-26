@@ -193,6 +193,8 @@ decision: {VALIDÉ|REJETÉ|EN ATTENTE}
 
 ## Slash commands disponibles
 
+### Commandes cœur de métier
+
 | Commande | Agent déclenché | Usage |
 |----------|----------------|-------|
 | `/diagnostic` | Diagnostiqueur | `/diagnostic {porteur} {description_projet}` |
@@ -201,6 +203,23 @@ decision: {VALIDÉ|REJETÉ|EN ATTENTE}
 | `/controle` | Contrôleur | `/controle {porteur} {dossier}` |
 | `/suivi` | Suiveur | `/suivi {porteur} {dossier}` |
 | `/archive` | Archiviste | `/archive {porteur} {dossier} {periode}` |
+
+### Commandes de prospection porteur *(source : ai-sales-team-claude + ai-marketing-skills)*
+
+| Commande | Description | Usage |
+|----------|-------------|-------|
+| `/porteur-research` | Recherche multi-sources sur une structure (identité légale, finances, historique) | `/porteur-research {porteur} [--url {site}] [--siret {n}]` |
+| `/porteur-prospect` | Score 0-100 du potentiel financement (5 sous-agents parallèles) | `/porteur-prospect {porteur} [--url {site}]` |
+| `/porteur-dossier` | Constitution complète du profil porteur avec enrichissement cascade | `/porteur-dossier {porteur} [--cascade] [--batch {csv}]` |
+
+### Commandes d'amélioration & investigation *(source : oh-my-claudecode)*
+
+| Commande | Description | Usage |
+|----------|-------------|-------|
+| `/plan` | Planification stratégique (modes : interview / direct / consensus) | `/plan {porteur} {objectif} [--direct] [--consensus]` |
+| `/deep-dive` | Investigation causale approfondie sur un problème de dossier | `/deep-dive {porteur} {dossier} {problème}` |
+| `/autoresearch` | Boucle d'amélioration itérative jusqu'au score cible | `/autoresearch {porteur} {dossier} [--section {s}] [--max-iterations {n}]` |
+| `/content-eval` | Panel d'experts automatique pour évaluer la qualité rédactionnelle | `/content-eval {porteur} {dossier} [--section {s}] [--target {score}]` |
 
 ---
 
