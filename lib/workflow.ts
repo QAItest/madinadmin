@@ -3,7 +3,7 @@ import type { AgentKey, WorkflowStep } from "./types";
 export const workflowDefinitions: Array<Omit<WorkflowStep, "status" | "outputPath" | "updatedAt">> = [
   {
     key: "diagnostiqueur",
-    title: "Diagnostic d'eligibilite",
+    title: "Diagnostic d'éligibilité",
     folder: "diagnostics"
   },
   {
@@ -13,17 +13,17 @@ export const workflowDefinitions: Array<Omit<WorkflowStep, "status" | "outputPat
   },
   {
     key: "documentaliste",
-    title: "Checklist pieces",
+    title: "Checklist pièces",
     folder: "checklists"
   },
   {
     key: "controleur",
-    title: "Controle conformite",
+    title: "Contrôle conformité",
     folder: "controles"
   },
   {
     key: "suiveur",
-    title: "Suivi post-depot",
+    title: "Suivi post-dépôt",
     folder: "suivi"
   },
   {

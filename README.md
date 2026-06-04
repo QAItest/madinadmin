@@ -4,10 +4,10 @@ Plateforme multi-agent d'assistance administrative pour le montage, la conformit
 
 ## Etat fusionne
 
-Ce depot contient maintenant deux couches issues de deux historiques Git fusionnes :
+Ce depot contient deux couches issues de deux historiques Git fusionnes :
 
 - **Racine du depot** : MVP Next.js local inspire de `madin-admin-mvp.jsx`, adapte a ChatGPT/OpenAI, avec stockage fichier local et fallback sans cle API.
-- **Architecture distante ajoutee par `origin/master`** : orchestration Claude Code, backend FastAPI/PostgreSQL, dashboard Next.js separe dans `madin-admin-platform/`, documentation et screenshots SVG.
+- **Architecture distante** : orchestration Claude Code, backend FastAPI/PostgreSQL, dashboard Next.js separe dans `madin-admin-platform/`, documentation et screenshots SVG.
 
 ## MVP local a la racine
 
@@ -43,9 +43,7 @@ Le module couvre :
 - suivi des travaux, du depot justificatif et du versement ;
 - archivage des factures, devis, attestations et elements de preuve.
 
-## Architecture distante ajoutee
-
-### Orchestration Claude Code
+## Orchestration Claude Code
 
 - `CLAUDE.md`
 - `.claude/agents/*.md`
@@ -53,7 +51,26 @@ Le module couvre :
 
 Agents inclus : Diagnostiqueur, Monteur, Documentaliste, Controleur, Suiveur, Archiviste, Veilleur, OCR, Courrier.
 
-### Backend FastAPI
+Commandes coeur de metier :
+
+- `/diagnostic`
+- `/dossier-feder`
+- `/checklist`
+- `/controle`
+- `/suivi`
+- `/archive`
+
+Commandes ajoutees par le remote :
+
+- `/porteur-research`
+- `/porteur-prospect`
+- `/porteur-dossier`
+- `/plan`
+- `/deep-dive`
+- `/autoresearch`
+- `/content-eval`
+
+## Backend FastAPI
 
 ```bash
 cd backend
@@ -63,7 +80,7 @@ uvicorn main:app --reload
 
 API : `http://localhost:8000`
 
-### PostgreSQL et pgAdmin
+## PostgreSQL et pgAdmin
 
 ```bash
 docker compose up -d
@@ -72,7 +89,7 @@ docker compose up -d
 - PostgreSQL : `localhost:5432`
 - pgAdmin : `http://localhost:5050`
 
-### Dashboard distant
+## Dashboard distant
 
 ```bash
 cd madin-admin-platform
@@ -88,10 +105,28 @@ Copier `.env.example` vers `.env`, puis renseigner les cles utiles selon le mode
 - `ANTHROPIC_API_KEY` pour l'architecture Claude/Anthropic.
 - `DATABASE_URL` pour le backend PostgreSQL.
 
+## Stack SaaS cible
+
+Madin'Admin est prepare pour une stack SaaS complete :
+
+- **Supabase** : base de donnees principale pour les porteurs, dossiers, pieces, droits et evenements.
+- **Better Auth** : authentification applicative via `app/api/auth/[...all]/route.ts`.
+- **Vercel** : deploiement Next.js, environnements preview/production et gestion des secrets.
+- **Stripe** : paiement, abonnements, portail client et webhooks.
+- **Namecheap** : domaine et DNS, a pointer vers Vercel.
+- **Resend** : mails transactionnels, notifications dossier et rappels.
+- **Plausible** : analytics sobre via script conditionnel.
+- **PostHog** : A/B testing, feature flags et product analytics.
+- **Sentry** : error tracking client/serveur.
+- **Upstash Redis** : cache, rate limiting, verrous et files legeres.
+
+Les SDK sont installes, mais les services restent inactifs tant que les variables correspondantes ne sont pas renseignees. Les clients sont centralises dans `lib/integrations.ts`; l'auth Better Auth est declaree dans `lib/auth.ts`; Plausible et PostHog sont branches via `components/AnalyticsScripts.tsx`.
+
 ## Regles bloquantes
 
-- Ne jamais inventer de chiffres, criteres, dates, financements ou pieces.
+- Ne jamais inventer de chiffres, criteres, dates, financements, montants de prime ou pieces.
 - Ne jamais deposer automatiquement a la place du porteur.
 - Ne jamais signer ou engager juridiquement le porteur.
 - Chaque livrable doit contenir le frontmatter YAML obligatoire.
 - Cloisonnement strict des donnees par porteur.
+- Pour Madin'Energie, verifier les fiches d'offres EDF Agir Plus avant toute conclusion d'eligibilite ou de montant.

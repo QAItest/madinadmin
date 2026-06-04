@@ -85,11 +85,11 @@ export async function createPorteur(input: CreatePorteurInput): Promise<Porteur>
   await mkdir(porteurDir, { recursive: true });
   await writeFile(
     path.join(porteurDir, "profil.md"),
-    `---\nporteur: "${porteur.name}"\nmodule: "${porteur.module}"\nterritoire: "${porteur.territory}"\nstatut: "actif"\n---\n\n# ${porteur.name}\n\n## Structure\n\n${porteur.structure}\n\n## Projet\n\n${porteur.project}\n\n## Module\n\n${porteur.module === "energie" ? "Madin'Energie" : "Financement de projet"}\n\n## Dispositif vise\n\n${porteur.dispositif}\n\n## Budget declare\n\n${porteur.budget || "Donnee manquante"}\n\n## Date cible\n\n${porteur.deadline || "Donnee manquante"}\n`,
+    `---\nporteur: "${porteur.name}"\nmodule: "${porteur.module}"\nterritoire: "${porteur.territory}"\nstatut: "actif"\n---\n\n# ${porteur.name}\n\n## Structure\n\n${porteur.structure}\n\n## Projet\n\n${porteur.project}\n\n## Module\n\n${porteur.module === "energie" ? "Madin'Énergie" : "Financement de projet"}\n\n## Dispositif visé\n\n${porteur.dispositif}\n\n## Budget déclaré\n\n${porteur.budget || "Donnée manquante"}\n\n## Date cible\n\n${porteur.deadline || "Donnée manquante"}\n`,
     "utf8"
   );
-  await writeFile(path.join(porteurDir, "statuts.md"), "# Statuts\n\nDonnees juridiques a completer.\n", "utf8");
-  await writeFile(path.join(porteurDir, "historique-dossiers.md"), "# Historique dossiers\n\nAucun depot historise.\n", "utf8");
+  await writeFile(path.join(porteurDir, "statuts.md"), "# Statuts\n\nDonnées juridiques à compléter.\n", "utf8");
+  await writeFile(path.join(porteurDir, "historique-dossiers.md"), "# Historique dossiers\n\nAucun dépôt historisé.\n", "utf8");
 
   await writeJson(path.join(dataRoot, "porteurs.json"), [porteur, ...existing]);
   return porteur;

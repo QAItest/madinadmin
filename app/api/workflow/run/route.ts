@@ -12,13 +12,13 @@ export async function POST(request: Request) {
     }
 
     if (!workflowDefinitions.some((step) => step.key === body.agent)) {
-      return Response.json({ error: "Agent inconnu." }, { status: 400 });
+      return Response.json({ error: "Étape inconnue." }, { status: 400 });
     }
 
     return Response.json(await runAgent(body.porteurId, body.agent));
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Erreur workflow." },
+      { error: error instanceof Error ? error.message : "Erreur de préparation." },
       { status: 500 }
     );
   }
