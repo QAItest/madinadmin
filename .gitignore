@@ -9,6 +9,7 @@ __pycache__/
 .DS_Store
 Thumbs.db
 *.log
+reports/stitch/
 
 # Local generated data from the root MVP dashboard
 .data/

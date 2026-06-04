@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import Stripe from "stripe";
 
-type IntegrationStatus = {
+export type IntegrationStatus = {
   description: string;
   env: string[];
   name: string;
@@ -16,6 +16,27 @@ function hasEnv(keys: string[]) {
 }
 
 export const integrations: IntegrationStatus[] = [
+  {
+    name: "OpenAI",
+    role: "Production des livrables",
+    description: "Rédaction structurée des diagnostics, dossiers, checklists et suivis à partir du profil porteur.",
+    env: ["OPENAI_API_KEY"],
+    ready: hasEnv(["OPENAI_API_KEY"])
+  },
+  {
+    name: "Anthropic",
+    role: "Contrôle qualité",
+    description: "Relecture de cohérence, conformité et lisibilité avant archivage des livrables.",
+    env: ["ANTHROPIC_API_KEY"],
+    ready: hasEnv(["ANTHROPIC_API_KEY"])
+  },
+  {
+    name: "Google Stitch",
+    role: "Conception UX",
+    description: "Génération de propositions d'écrans desktop et mobile pour remodeler l'expérience utilisateur.",
+    env: ["STITCH_API_KEY"],
+    ready: hasEnv(["STITCH_API_KEY"]) || hasEnv(["STITCH_ACCESS_TOKEN", "GOOGLE_CLOUD_PROJECT"])
+  },
   {
     name: "Supabase",
     role: "Base de données",

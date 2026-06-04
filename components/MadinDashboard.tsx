@@ -498,6 +498,27 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
       </section>
       ) : null}
 
+      {currentPage === "dispositifs" ? (
+      <section className="ops-panel" aria-labelledby="ops-title">
+        <div className="section-kicker">
+          <span>Socle de production</span>
+          <h2 id="ops-title">Services connectés au parcours</h2>
+        </div>
+        <div className="ops-grid">
+          {data.integrations.slice(0, 3).map((integration) => (
+            <article className="ops-card" data-ready={integration.ready ? "true" : "false"} key={integration.name}>
+              <div>
+                <span>{integration.role}</span>
+                <h3>{integration.name}</h3>
+              </div>
+              <p>{integration.description}</p>
+              <strong>{integration.ready ? "Configuré" : "À configurer"}</strong>
+            </article>
+          ))}
+        </div>
+      </section>
+      ) : null}
+
       {currentPage === "mon-dossier" && showCreate ? (
         <section className="create-card" aria-labelledby="create-title">
           <div className="create-card-head">

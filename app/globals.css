@@ -167,7 +167,8 @@ button:hover:not(:disabled) {
 [data-theme="dark"] .dossier-meta div,
 [data-theme="dark"] .readiness-panel li,
 [data-theme="dark"] .section-title,
-[data-theme="dark"] .session-bar {
+[data-theme="dark"] .session-bar,
+[data-theme="dark"] .ops-card {
   background: var(--surface-container);
 }
 
@@ -182,6 +183,7 @@ button:hover:not(:disabled) {
 [data-theme="dark"] .decision-card h3,
 [data-theme="dark"] .decision-card dt,
 [data-theme="dark"] .readiness-panel strong,
+[data-theme="dark"] .ops-card h3,
 [data-theme="dark"] .portal-hero-copy h1,
 [data-theme="dark"] .section-kicker h2,
 [data-theme="dark"] .secure-workspace h2,
@@ -196,6 +198,7 @@ button:hover:not(:disabled) {
 [data-theme="dark"] .decision-card p,
 [data-theme="dark"] .decision-card dd,
 [data-theme="dark"] .readiness-panel p,
+[data-theme="dark"] .ops-card p,
 [data-theme="dark"] .field-hint,
 [data-theme="dark"] .dossier-card p,
 [data-theme="dark"] .agent-node small,
@@ -842,7 +845,8 @@ button:disabled {
 .portal-section,
 .fund-guides,
 .decision-section,
-.readiness-panel {
+.readiness-panel,
+.ops-panel {
   display: grid;
   gap: 14px;
 }
@@ -889,13 +893,20 @@ button:disabled {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.ops-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
 .decision-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .theme-card,
 .fund-card,
-.decision-card {
+.decision-card,
+.ops-card {
   overflow: hidden;
   padding: 20px;
   position: relative;
@@ -903,7 +914,8 @@ button:disabled {
 
 .theme-card::after,
 .fund-card::after,
-.decision-card::after {
+.decision-card::after,
+.ops-card::after {
   position: absolute;
   inset: 0 auto 0 0;
   width: 4px;
@@ -913,8 +925,52 @@ button:disabled {
 
 .theme-card h3,
 .fund-card h3,
-.decision-card h3 {
+.decision-card h3,
+.ops-card h3 {
   font-size: 22px;
+}
+
+.ops-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.ops-card span {
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.ops-card h3 {
+  margin: 6px 0 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+}
+
+.ops-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.ops-card strong {
+  justify-self: start;
+  border-radius: 999px;
+  background: var(--gold-soft);
+  color: var(--gold);
+  font-size: 12px;
+  padding: 6px 10px;
+}
+
+.ops-card[data-ready="true"] strong {
+  background: var(--leaf-soft);
+  color: var(--leaf);
 }
 
 .decision-card {
@@ -2183,6 +2239,7 @@ pre {
   .secure-workspace,
   .theme-grid,
   .fund-grid,
+  .ops-grid,
   .decision-grid,
   .readiness-panel ol,
   .site-footer,

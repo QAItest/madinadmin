@@ -1,3 +1,5 @@
+import type { IntegrationStatus } from "./integrations";
+
 export type AgentKey =
   | "diagnostiqueur"
   | "monteur"
@@ -42,6 +44,7 @@ export type Livrable = {
 };
 
 export type DashboardData = {
+  integrations: IntegrationStatus[];
   porteurs: Porteur[];
   selected?: Porteur;
   steps: WorkflowStep[];

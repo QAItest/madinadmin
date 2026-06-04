@@ -1,6 +1,27 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { stitch, StitchError } from "@google/stitch-sdk";
+
+async function loadEnvFile(fileName) {
+  try {
+    const content = await readFile(join(process.cwd(), fileName), "utf8");
+    for (const line of content.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
+      const index = trimmed.indexOf("=");
+      const key = trimmed.slice(0, index).trim();
+      const value = trimmed.slice(index + 1).trim().replace(/^["']|["']$/g, "");
+      if (key && !process.env[key]) {
+        process.env[key] = value;
+      }
+    }
+  } catch {
+    // Optional local env file.
+  }
+}
+
+await loadEnvFile(".env");
+await loadEnvFile(".env.local");
 
 const hasCredentials = Boolean(process.env.STITCH_API_KEY || (process.env.STITCH_ACCESS_TOKEN && process.env.GOOGLE_CLOUD_PROJECT));
 

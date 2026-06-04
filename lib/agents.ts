@@ -1,4 +1,5 @@
 import { generateText } from "ai";
+import { reviewLivrableWithAnthropic } from "./anthropic";
 import { modelForAgent } from "./openai";
 import { getPorteur, readLivrables, renderFrontmatter, writeLivrable } from "./store";
 import type { AgentKey, Livrable, Porteur } from "./types";
@@ -87,6 +88,7 @@ export async function runAgent(porteurId: string, agent: AgentKey) {
 
   const livrables = await readLivrables(porteur.id);
   let content: string;
+  const frontmatter = renderFrontmatter(porteur, agent);
 
   if (process.env.OPENAI_API_KEY) {
     const prompt = {
@@ -101,18 +103,24 @@ export async function runAgent(porteurId: string, agent: AgentKey) {
         isEnergyDossier(porteur)
           ? "Retourne un livrable Markdown complet pour le module Madin'Energie avec sections Sources lues, Diagnostic energie, Aides applicables, Pieces, Points de vigilance et Prochaines actions. Ne jamais inventer de montant de prime ou de critere EDF. Inclure le frontmatter YAML fourni sans le modifier."
           : "Retourne un livrable Markdown complet avec sections Sources lues, Analyse, Points de vigilance et Prochaines actions. Inclure le frontmatter YAML fourni sans le modifier.",
-      frontmatter: renderFrontmatter(porteur, agent)
+      frontmatter
     };
 
-    const result = await generateText({
-      model: modelForAgent(agent),
-      system: systems[agent],
-      prompt: JSON.stringify(prompt, null, 2)
-    });
-    content = result.text.startsWith("---") ? result.text : `${renderFrontmatter(porteur, agent)}\n\n${result.text}`;
+    try {
+      const result = await generateText({
+        model: modelForAgent(agent),
+        system: systems[agent],
+        prompt: JSON.stringify(prompt, null, 2)
+      });
+      content = result.text.startsWith("---") ? result.text : `${frontmatter}\n\n${result.text}`;
+    } catch {
+      content = localDraft(porteur, agent, livrables);
+    }
   } else {
     content = localDraft(porteur, agent, livrables);
   }
+
+  content = await reviewLivrableWithAnthropic({ agent, content, frontmatter, porteur });
 
   return writeLivrable(porteur, agent, content);
 }

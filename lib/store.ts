@@ -8,6 +8,7 @@ import type {
   Porteur,
   WorkflowStep
 } from "./types";
+import { integrations } from "./integrations";
 import { previousAgent, workflowDefinitions, workflowTitle } from "./workflow";
 
 const root = process.cwd();
@@ -182,6 +183,7 @@ export async function getDashboardData(selectedId?: string): Promise<DashboardDa
     : porteurs[0];
 
   return {
+    integrations,
     porteurs,
     selected,
     steps: await getWorkflowSteps(selected?.id),
