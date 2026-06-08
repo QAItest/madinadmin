@@ -148,3 +148,16 @@ Les SDK sont installes, mais les services restent inactifs tant que les variable
 - Chaque livrable doit contenir le frontmatter YAML obligatoire.
 - Cloisonnement strict des donnees par porteur.
 - Pour Madin'Energie, verifier les fiches d'offres EDF Agir Plus avant toute conclusion d'eligibilite ou de montant.
+
+## Documentation
+
+Toute la documentation redactionnelle est regroupee dans `docs/` :
+
+- `docs/besoins/madin-energie.md` : cadrage du module Madin'Energie.
+- `docs/design-system/madinadmin/MASTER.md` : design system (charte, composants).
+- `docs/design-system/madinadmin/pages/dashboard.md` : specification de la page dashboard.
+- `docs/internal/architecture/` : diagrammes et prompt d'architecture interne.
+- `docs/google-stitch.md` : note d'integration Google Stitch.
+- `docs/screenshots/` : captures SVG utilisees dans ce README.
+
+Les fichiers de configuration des outils restent a leur emplacement attendu : `CLAUDE.md` et `CHATGPT.md` a la racine, definitions d'agents et commandes dans `.claude/`, `.chatgpt/` et `.codex/`.
