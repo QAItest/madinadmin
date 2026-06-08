@@ -31,6 +31,13 @@ export const integrations: IntegrationStatus[] = [
     ready: hasEnv(["ANTHROPIC_API_KEY"])
   },
   {
+    name: "Hugging Face",
+    role: "Backup open-source",
+    description: "Secours de génération ou de relecture via modèles open-source si OpenAI ou Anthropic sont indisponibles.",
+    env: ["HUGGINGFACE_API_KEY"],
+    ready: hasEnv(["HUGGINGFACE_API_KEY"]) || hasEnv(["HF_TOKEN"]) || hasEnv(["OPEN_SOURCE_API_KEY"])
+  },
+  {
     name: "Google Stitch",
     role: "Conception UX",
     description: "Génération de propositions d'écrans desktop et mobile pour remodeler l'expérience utilisateur.",

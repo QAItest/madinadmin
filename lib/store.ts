@@ -2,6 +2,11 @@ import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type {
   AgentKey,
+  AgentProviderKpi,
+  AgentProviderRun,
+  AdminDossierStatus,
+  AdminOverview,
+  AgentRunLog,
   CreatePorteurInput,
   DashboardData,
   Livrable,
@@ -9,11 +14,14 @@ import type {
   WorkflowStep
 } from "./types";
 import { integrations } from "./integrations";
+import { availableModelOptions, routeForAgent, reviewModelNameForAgent } from "./model-routing";
+import { modelNameForAgent } from "./openai";
 import { previousAgent, workflowDefinitions, workflowTitle } from "./workflow";
 
 const root = process.cwd();
 const porteursRoot = path.join(root, "porteurs");
 const dataRoot = path.join(root, ".data");
+const agentRunsPath = path.join(dataRoot, "agent-runs.json");
 
 function slugify(value: string) {
   return value
@@ -158,6 +166,16 @@ export async function writeLivrable(porteur: Porteur, agent: AgentKey, content: 
   };
 }
 
+export async function listAgentRuns(): Promise<AgentRunLog[]> {
+  await ensureBaseDirs();
+  return readJson<AgentRunLog[]>(agentRunsPath, []);
+}
+
+export async function appendAgentRun(run: AgentRunLog) {
+  const runs = await listAgentRuns();
+  await writeJson(agentRunsPath, [run, ...runs].slice(0, 1000));
+}
+
 export async function getWorkflowSteps(porteurId?: string): Promise<WorkflowStep[]> {
   if (!porteurId) {
     return workflowDefinitions.map((step, index) => ({ ...step, status: index === 0 ? "ready" : "pending" }));
@@ -176,6 +194,175 @@ export async function getWorkflowSteps(porteurId?: string): Promise<WorkflowStep
   });
 }
 
+function sumUsage(runs: AgentRunLog[], field: "inputTokens" | "outputTokens" | "totalTokens" | "cachedInputTokens" | "reasoningTokens") {
+  return runs.reduce(
+    (sum, run) => sum + run.providers.reduce((providerSum, provider) => providerSum + (provider.usage?.[field] ?? 0), 0),
+    0
+  );
+}
+
+function sumProviderUsage(providers: AgentProviderRun[], field: "inputTokens" | "outputTokens" | "totalTokens" | "cachedInputTokens" | "reasoningTokens") {
+  return providers.reduce((sum, provider) => sum + (provider.usage?.[field] ?? 0), 0);
+}
+
+function providerBreakdownForAgent(runsForAgent: AgentRunLog[], definition: (typeof workflowDefinitions)[number]): AgentProviderKpi[] {
+  const expectedProviders: Array<Pick<AgentProviderKpi, "provider" | "role" | "model">> = [
+    { provider: "openai", role: "generation", model: modelNameForAgent(definition.key) },
+    { provider: "anthropic", role: "review", model: reviewModelNameForAgent(definition.key) },
+    { provider: "huggingface", role: "backup", model: routeForAgent(definition.key).openSourceBackupModel },
+    { provider: "huggingface", role: "review", model: routeForAgent(definition.key).openSourceReviewModel }
+  ];
+
+  return expectedProviders.map((expected) => {
+    const matchingProviders = runsForAgent.flatMap((run) =>
+      run.providers
+        .filter((provider) => provider.provider === expected.provider && provider.role === expected.role)
+        .map((provider) => ({ provider, finishedAt: run.finishedAt }))
+    );
+    const last = matchingProviders.slice().sort((a, b) => b.finishedAt.localeCompare(a.finishedAt))[0];
+    const totalDuration = matchingProviders.reduce((sum, item) => sum + item.provider.durationMs, 0);
+
+    return {
+      provider: expected.provider,
+      role: expected.role,
+      model: last?.provider.model ?? expected.model,
+      runCount: matchingProviders.length,
+      successCount: matchingProviders.filter((item) => item.provider.status === "success").length,
+      fallbackCount: matchingProviders.filter((item) => item.provider.status === "fallback").length,
+      errorCount: matchingProviders.filter((item) => item.provider.status === "error").length,
+      skippedCount: matchingProviders.filter((item) => item.provider.status === "skipped").length,
+      inputTokens: sumProviderUsage(matchingProviders.map((item) => item.provider), "inputTokens"),
+      outputTokens: sumProviderUsage(matchingProviders.map((item) => item.provider), "outputTokens"),
+      totalTokens: sumProviderUsage(matchingProviders.map((item) => item.provider), "totalTokens"),
+      cachedInputTokens: sumProviderUsage(matchingProviders.map((item) => item.provider), "cachedInputTokens"),
+      reasoningTokens: sumProviderUsage(matchingProviders.map((item) => item.provider), "reasoningTokens"),
+      averageDurationMs: matchingProviders.length > 0 ? Math.round(totalDuration / matchingProviders.length) : 0,
+      lastStatus: last?.provider.status,
+      lastRunAt: last?.finishedAt
+    };
+  });
+}
+
+async function getAdminOverview(porteurs: Porteur[]): Promise<AdminOverview> {
+  const agentRuns = await listAgentRuns();
+  const totalSteps = workflowDefinitions.length;
+  const livrablesByPorteur = await Promise.all(
+    porteurs.map(async (porteur) => ({
+      porteur,
+      livrables: await readLivrables(porteur.id)
+    }))
+  );
+
+  const dossiers = livrablesByPorteur.map(({ porteur, livrables }) => {
+    const completedSteps = livrables.length;
+    const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+    const status: AdminDossierStatus = completedSteps === 0 ? "a-demarrer" : completedSteps === totalSteps ? "pret" : "en-cours";
+    const nextDefinition = workflowDefinitions.find((step, index) => {
+      if (livrables.some((livrable) => livrable.agent === step.key)) return false;
+      if (index === 0) return true;
+      const previous = workflowDefinitions[index - 1];
+      return livrables.some((livrable) => livrable.agent === previous.key);
+    });
+
+    return {
+      id: porteur.id,
+      name: porteur.name,
+      module: porteur.module ?? "financement",
+      structure: porteur.structure,
+      dispositif: porteur.dispositif,
+      budget: porteur.budget,
+      updatedAt: porteur.updatedAt,
+      completedSteps,
+      totalSteps,
+      progress,
+      status,
+      nextStep: nextDefinition?.key,
+      nextStepTitle: nextDefinition?.title
+    };
+  });
+
+  const agentKpis = workflowDefinitions.map((definition, index) => {
+    const route = routeForAgent(definition.key);
+    const runsForAgent = agentRuns.filter((run) => run.agent === definition.key);
+    const matchingLivrables = livrablesByPorteur
+      .map(({ livrables }) => livrables.find((livrable) => livrable.agent === definition.key))
+      .filter(Boolean) as Livrable[];
+    const completedDossiers = matchingLivrables.length;
+    const readyDossiers = livrablesByPorteur.filter(({ livrables }) => {
+      if (livrables.some((livrable) => livrable.agent === definition.key)) return false;
+      if (index === 0) return true;
+      const previous = workflowDefinitions[index - 1];
+      return livrables.some((livrable) => livrable.agent === previous.key);
+    }).length;
+    const pendingDossiers = Math.max(porteurs.length - completedDossiers - readyDossiers, 0);
+    const totalContentLength = matchingLivrables.reduce((sum, livrable) => sum + livrable.content.length, 0);
+    const lastOutputAt = matchingLivrables
+      .map((livrable) => livrable.createdAt)
+      .sort()
+      .reverse()[0];
+    const totalDuration = runsForAgent.reduce((sum, run) => sum + run.durationMs, 0);
+    const lastRun = runsForAgent.slice().sort((a, b) => b.finishedAt.localeCompare(a.finishedAt))[0];
+    const lastProvider = lastRun?.providers.find((provider) => provider.status === "success") ?? lastRun?.providers[0];
+
+    return {
+      key: definition.key,
+      title: definition.title,
+      folder: definition.folder,
+      modelTier: route.tier,
+      modelEffort: route.effort,
+      qualityScore: route.qualityScore,
+      speedScore: route.speedScore,
+      gainScore: route.gainScore,
+      modelRationale: route.rationale,
+      primaryProvider: "OpenAI",
+      primaryModel: route.openaiModel,
+      reviewProvider: "Anthropic",
+      reviewModel: route.anthropicReviewModel,
+      backupProvider: "Hugging Face",
+      backupModel: route.openSourceBackupModel,
+      totalLivrables: matchingLivrables.length,
+      completedDossiers,
+      readyDossiers,
+      pendingDossiers,
+      completionRate: porteurs.length > 0 ? Math.round((completedDossiers / porteurs.length) * 100) : 0,
+      averageContentLength: matchingLivrables.length > 0 ? Math.round(totalContentLength / matchingLivrables.length) : 0,
+      runCount: runsForAgent.length,
+      successCount: runsForAgent.filter((run) => run.status === "success").length,
+      fallbackCount: runsForAgent.filter((run) => run.status === "fallback" || run.status === "partial").length,
+      errorCount: runsForAgent.filter((run) => run.status === "error").length,
+      inputTokens: sumUsage(runsForAgent, "inputTokens"),
+      outputTokens: sumUsage(runsForAgent, "outputTokens"),
+      totalTokens: sumUsage(runsForAgent, "totalTokens"),
+      cachedInputTokens: sumUsage(runsForAgent, "cachedInputTokens"),
+      reasoningTokens: sumUsage(runsForAgent, "reasoningTokens"),
+      averageDurationMs: runsForAgent.length > 0 ? Math.round(totalDuration / runsForAgent.length) : 0,
+      lastRunStatus: lastRun?.status,
+      lastRunProvider: lastProvider?.provider,
+      lastRunModel: lastProvider?.model,
+      lastOutputAt,
+      lastRunAt: lastRun?.finishedAt,
+      providerBreakdown: providerBreakdownForAgent(runsForAgent, definition)
+    };
+  });
+
+  const averageProgress =
+    dossiers.length > 0 ? Math.round(dossiers.reduce((sum, dossier) => sum + dossier.progress, 0) / dossiers.length) : 0;
+
+  return {
+    dossiers,
+    agentKpis,
+    modelOptions: availableModelOptions(),
+    totals: {
+      dossiers: dossiers.length,
+      inProgress: dossiers.filter((dossier) => dossier.status === "en-cours").length,
+      ready: dossiers.filter((dossier) => dossier.status === "pret").length,
+      notStarted: dossiers.filter((dossier) => dossier.status === "a-demarrer").length,
+      averageProgress,
+      livrables: agentKpis.reduce((sum, agent) => sum + agent.totalLivrables, 0)
+    }
+  };
+}
+
 export async function getDashboardData(selectedId?: string): Promise<DashboardData> {
   const porteurs = await listPorteurs();
   const selected = selectedId
@@ -184,6 +371,7 @@ export async function getDashboardData(selectedId?: string): Promise<DashboardDa
 
   return {
     integrations,
+    admin: await getAdminOverview(porteurs),
     porteurs,
     selected,
     steps: await getWorkflowSteps(selected?.id),

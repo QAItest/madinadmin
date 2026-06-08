@@ -1,4 +1,6 @@
 import { openai } from "@ai-sdk/openai";
+import type { AgentKey } from "./types";
+import { modelNameForAgentRoute } from "./model-routing";
 
 export const openAiModels = {
   orchestrator: process.env.OPENAI_MODEL_ORCHESTRATOR ?? "gpt-5.2",
@@ -6,12 +8,12 @@ export const openAiModels = {
   audit: process.env.OPENAI_MODEL_AUDIT ?? "gpt-5.2"
 };
 
-export function modelForAgent(agent: string) {
-  if (["controleur", "archiviste", "diagnostiqueur"].includes(agent)) {
-    return openai(openAiModels.audit);
-  }
+export function modelForAgent(agent: AgentKey) {
+  return openai(modelNameForAgent(agent));
+}
 
-  return openai(openAiModels.agent);
+export function modelNameForAgent(agent: AgentKey) {
+  return modelNameForAgentRoute(agent);
 }
 
 export function orchestratorModel() {

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ReactNode, useMemo, useState } from "react";
+import { CSSProperties, ReactNode, useEffect, useMemo, useState } from "react";
 import type { AgentKey, DashboardData, ModuleKey } from "../lib/types";
 import { useHeaderActions } from "./HeaderActionsContext";
 import { MadinLogoMark } from "./MadinLogoMark";
@@ -12,7 +12,16 @@ type Props = {
   initialData: DashboardData;
 };
 
-type DashboardPage = "aides" | "demarches" | "dispositifs" | "mon-dossier";
+type DashboardPage = "aides" | "demarches" | "dispositifs" | "mon-dossier" | "admin";
+
+type NoticeKind = "success" | "info" | "warning" | "error";
+
+type NoticeState = {
+  detail?: string;
+  kind: NoticeKind;
+  status: number;
+  title: string;
+};
 
 const agentsFinancement: Array<{ key: AgentKey; nom: string; role: string }> = [
   { key: "diagnostiqueur", nom: "Diagnostic", role: "Éligibilité" },
@@ -140,10 +149,16 @@ const pageMeta: Record<DashboardPage, { href: string; label: string; title: stri
     label: "Mon dossier",
     title: "Dossier actif",
     eyebrow: "Espace client"
+  },
+  admin: {
+    href: "/admin",
+    label: "Admin",
+    title: "Pilotage des dossiers",
+    eyebrow: "Supervision"
   }
 };
 
-const navItems: DashboardPage[] = ["aides", "demarches", "dispositifs", "mon-dossier"];
+const navItems: DashboardPage[] = ["aides", "demarches", "dispositifs", "mon-dossier", "admin"];
 
 const readinessByModule: Record<ModuleKey, Array<{ label: string; detail: string }>> = {
   financement: [
@@ -162,8 +177,147 @@ function moduleLabel(module?: ModuleKey) {
   return module === "energie" ? "Madin'Énergie" : "Financement de projet";
 }
 
+function dossierStatusLabel(status: DashboardData["admin"]["dossiers"][number]["status"]) {
+  if (status === "pret") return "Prêt";
+  if (status === "en-cours") return "En cours";
+  return "À démarrer";
+}
+
+function formatDate(value?: string) {
+  if (!value) return "-";
+  return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(value));
+}
+
+function formatDateTime(value?: string) {
+  if (!value) return "Non mesuré";
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
+
+function formatNumber(value?: number) {
+  if (!value) return "0";
+  return new Intl.NumberFormat("fr-FR").format(value);
+}
+
+function formatDuration(value?: number) {
+  if (!value) return "Non mesuré";
+  if (value < 1000) return `${value} ms`;
+  return `${(value / 1000).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} s`;
+}
+
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function DonutKpi({ label, value, detail }: { label: string; value: number; detail: string }) {
+  const percent = clampPercent(value);
+  return (
+    <div className="donut-kpi" style={{ "--donut-value": `${percent}%` } as CSSProperties}>
+      <div className="donut-kpi-ring" aria-hidden="true">
+        <strong>{percent}%</strong>
+      </div>
+      <div>
+        <span>{label}</span>
+        <p>{detail}</p>
+      </div>
+    </div>
+  );
+}
+
+function MiniBarGraph({ items }: { items: Array<{ label: string; value: number; tone?: "primary" | "success" | "warning" | "danger" }> }) {
+  return (
+    <div className="mini-bar-graph" aria-hidden="true">
+      {items.map((item) => (
+        <div className={`mini-bar-row tone-${item.tone ?? "primary"}`} key={item.label}>
+          <span>{item.label}</span>
+          <div>
+            <i style={{ width: `${clampPercent(item.value)}%` }} />
+          </div>
+          <strong>{clampPercent(item.value)}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function runStatusLabel(status?: DashboardData["admin"]["agentKpis"][number]["lastRunStatus"]) {
+  if (status === "success") return "Succès";
+  if (status === "partial") return "Succès partiel";
+  if (status === "fallback") return "Fallback";
+  if (status === "error") return "Erreur";
+  return "Non mesuré";
+}
+
+function providerLabel(provider?: string) {
+  if (provider === "openai") return "OpenAI";
+  if (provider === "anthropic") return "Anthropic";
+  if (provider === "huggingface") return "Hugging Face";
+  return "Non mesuré";
+}
+
+function providerRoleLabel(role?: string) {
+  if (role === "generation") return "Génération";
+  if (role === "review") return "Relecture";
+  if (role === "backup") return "Backup open-source";
+  return "Traitement";
+}
+
+function providerStatusLabel(status?: string) {
+  if (status === "success") return "Succès";
+  if (status === "fallback") return "Fallback";
+  if (status === "error") return "Erreur";
+  if (status === "skipped") return "Ignoré";
+  return "Non mesuré";
+}
+
+function modelTierLabel(tier?: string) {
+  if (tier === "premium") return "Premium";
+  if (tier === "audit") return "Audit";
+  if (tier === "balanced") return "Équilibré";
+  if (tier === "speed") return "Rapide";
+  return "Standard";
+}
+
+function effortLabel(effort?: string) {
+  if (effort === "high") return "Élevé";
+  if (effort === "standard") return "Standard";
+  if (effort === "low") return "Bas";
+  return "Standard";
+}
+
 function readableLivrableContent(content = "") {
   return content.replace(/^---[\s\S]*?---\s*/, "").trim();
+}
+
+function ProgressQuest({ compact = false }: { compact?: boolean }) {
+  return (
+    <span className={compact ? "quest-loader quest-loader-compact" : "quest-loader"} role="status" aria-live="polite">
+      <span className="sr-only">Préparation en cours, progression du dossier.</span>
+      <span className="quest-loader-track" aria-hidden="true">
+        <span className="quest-loader-fill" />
+        <span className="quest-loader-step step-one" />
+        <span className="quest-loader-step step-two" />
+        <span className="quest-loader-step step-three" />
+      </span>
+      <span className="quest-loader-label" aria-hidden="true">
+        <span>Progression du dossier</span>
+        <strong>+ XP</strong>
+      </span>
+    </span>
+  );
+}
+
+function noticeKindFromStatus(status: number): NoticeKind {
+  if (status >= 500) return "error";
+  if (status >= 400) return "warning";
+  if (status >= 300) return "info";
+  if (status >= 200) return "success";
+  return "info";
 }
 
 export function MadinDashboard({ activePage = "aides", headerActions, initialData }: Props) {
@@ -174,8 +328,11 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
   const [selectedId, setSelectedId] = useState(initialData.selected?.id ?? "");
   const [activeLivrable, setActiveLivrable] = useState(initialData.livrables[0]?.path ?? "");
   const [busy, setBusy] = useState<string | undefined>();
-  const [message, setMessage] = useState<string | undefined>();
-  const [showCreate, setShowCreate] = useState(!initialData.selected);
+  const [savingModel, setSavingModel] = useState<string | undefined>();
+  const [message, setMessage] = useState<NoticeState | undefined>();
+  const [showCreate, setShowCreate] = useState(
+    () => !initialData.selected || (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("create") === "1")
+  );
   const [portalQuery, setPortalQuery] = useState("");
   const [preferredModule, setPreferredModule] = useState<ModuleKey>(initialData.selected?.module ?? "financement");
   const [selectedDecision, setSelectedDecision] = useState<ModuleKey | undefined>();
@@ -198,10 +355,20 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
   const customerAccountNumber = `MA-${accountSeed.padEnd(8, "0")}`;
   const selectedLivrableText = readableLivrableContent(selectedLivrable?.content);
 
+  useEffect(() => {
+    if (!message) return;
+    const timeout = window.setTimeout(() => setMessage(undefined), 4200);
+    return () => window.clearTimeout(timeout);
+  }, [message]);
+
   function startTrack(module: ModuleKey) {
     setSelectedDecision(module);
     setPreferredModule(module);
     setShowCreate(true);
+  }
+
+  function notify(next: Omit<NoticeState, "kind"> & { kind?: NoticeKind }) {
+    setMessage({ ...next, kind: next.kind ?? noticeKindFromStatus(next.status) });
   }
 
   async function refresh(porteurId = selectedId) {
@@ -240,9 +407,9 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
       const created = await response.json();
       await refresh(created.id);
       setShowCreate(false);
-      setMessage("Dossier créé. Lancez la préparation du dossier.");
+      notify({ status: 201, title: "Dossier créé", detail: "Vous pouvez lancer la préparation du dossier." });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Création impossible.");
+      notify({ status: 500, title: "Création impossible", detail: error instanceof Error ? error.message : undefined });
     } finally {
       setBusy(undefined);
     }
@@ -258,13 +425,13 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ porteurId: selectedId, agent })
       });
-      if (!response.ok) throw new Error(await response.text());
+      if (!response.ok) throw new Error(`${response.status} - ${await response.text()}`);
       const livrable = await response.json();
       await refresh(selectedId);
       setActiveLivrable(livrable.path);
-      setMessage(`${livrable.title} généré.`);
+      notify({ status: 200, title: "Livrable généré", detail: livrable.title });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Generation impossible.");
+      notify({ status: 500, title: "Génération impossible", detail: error instanceof Error ? error.message : undefined });
     } finally {
       setBusy(undefined);
     }
@@ -274,6 +441,25 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
     for (const step of data.steps) {
       if (step.status === "pending") break;
       await runStep(step.key);
+    }
+  }
+
+  async function saveAgentModel(agent: AgentKey, patch: Record<string, string>) {
+    setSavingModel(`${agent}-${Object.keys(patch)[0]}`);
+    setMessage(undefined);
+    try {
+      const response = await fetch("/api/admin/model-route", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent, ...patch })
+      });
+      if (!response.ok) throw new Error(`${response.status} - ${await response.text()}`);
+      await refresh(selectedId);
+      notify({ status: 200, title: "Routage modèle mis à jour", detail: "La prochaine exécution utilisera cette affectation." });
+    } catch (error) {
+      notify({ status: 500, title: "Mise à jour impossible", detail: error instanceof Error ? error.message : undefined });
+    } finally {
+      setSavingModel(undefined);
     }
   }
 
@@ -327,8 +513,20 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
       </header>
 
       {message ? (
-        <div className="notice" role="status" aria-live="polite" aria-atomic="true">
-          {message}
+        <div className={`notice notice-${message.kind}`} role={message.kind === "error" ? "alert" : "status"} aria-live={message.kind === "error" ? "assertive" : "polite"} aria-atomic="true">
+          <span className="notice-icon" aria-hidden="true">
+            {message.kind === "success" ? "✓" : message.kind === "info" ? "i" : message.kind === "warning" ? "!" : "×"}
+          </span>
+          <div className="notice-copy">
+            <div>
+              <strong>{message.title}</strong>
+              <span>HTTP {message.status}</span>
+            </div>
+            {message.detail ? <p>{message.detail}</p> : null}
+          </div>
+          <button className="notice-close" type="button" onClick={() => setMessage(undefined)} aria-label="Fermer la notification">
+            ×
+          </button>
         </div>
       ) : null}
 
@@ -498,27 +696,6 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
       </section>
       ) : null}
 
-      {currentPage === "dispositifs" ? (
-      <section className="ops-panel" aria-labelledby="ops-title">
-        <div className="section-kicker">
-          <span>Socle de production</span>
-          <h2 id="ops-title">Services connectés au parcours</h2>
-        </div>
-        <div className="ops-grid">
-          {data.integrations.slice(0, 3).map((integration) => (
-            <article className="ops-card" data-ready={integration.ready ? "true" : "false"} key={integration.name}>
-              <div>
-                <span>{integration.role}</span>
-                <h3>{integration.name}</h3>
-              </div>
-              <p>{integration.description}</p>
-              <strong>{integration.ready ? "Configuré" : "À configurer"}</strong>
-            </article>
-          ))}
-        </div>
-      </section>
-      ) : null}
-
       {currentPage === "mon-dossier" && showCreate ? (
         <section className="create-card" aria-labelledby="create-title">
           <div className="create-card-head">
@@ -605,7 +782,7 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
               </ul>
             </section>
             <button type="submit" disabled={busy === "create"} aria-busy={busy === "create"}>
-              {busy === "create" ? "Création en cours..." : "Lancer la préparation du dossier"}
+              {busy === "create" ? <ProgressQuest compact /> : "Lancer la préparation du dossier"}
             </button>
           </form>
         </section>
@@ -671,7 +848,7 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
           {completedSteps === 0 ? (
             <div className="center-action">
               <button disabled={Boolean(busy)} onClick={() => runStep("diagnostiqueur")} type="button" aria-busy={Boolean(busy)}>
-                {busy ? "Traitement en cours..." : "Lancer le diagnostic du dossier"}
+                {busy ? <ProgressQuest compact /> : "Lancer le diagnostic du dossier"}
               </button>
             </div>
           ) : null}
@@ -696,7 +873,7 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
                     <em>{new Date(livrable.createdAt).toLocaleTimeString("fr-FR")}</em>
                   </button>
                 ))}
-                {busy ? <p>Traitement en cours...</p> : null}
+                {busy ? <ProgressQuest /> : null}
               </div>
             </section>
 
@@ -713,9 +890,306 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
               Créer un nouveau dossier
             </button>
             <button disabled={Boolean(busy)} onClick={runAll} type="button" aria-busy={Boolean(busy)}>
-              {busy ? "Traitement en cours..." : "Continuer la préparation"}
+              {busy ? <ProgressQuest compact /> : "Continuer la préparation"}
             </button>
           </div>
+        </section>
+      ) : null}
+
+      {currentPage === "admin" ? (
+        <section className="admin-page" aria-labelledby="admin-title">
+          <div className="admin-hero">
+            <div>
+              <span>Console administrateur</span>
+              <h1 id="admin-title">Pilotage des dossiers en cours</h1>
+              <p>
+                Suivez l'ensemble des dossiers FEDER et Agir Plus, identifiez les prochaines actions et mesurez la performance
+                opérationnelle des agents de traitement.
+              </p>
+            </div>
+            <Link className="text-link" href="/mon-dossier">
+              Ouvrir le dossier actif
+            </Link>
+          </div>
+
+          <div className="admin-kpi-grid" aria-label="Indicateurs globaux">
+            <article className="admin-kpi-card">
+              <span>Dossiers suivis</span>
+              <strong>{data.admin.totals.dossiers}</strong>
+              <p>{data.admin.totals.inProgress} en cours</p>
+              <MiniBarGraph
+                items={[
+                  {
+                    label: "En cours",
+                    value: data.admin.totals.dossiers > 0 ? (data.admin.totals.inProgress / data.admin.totals.dossiers) * 100 : 0
+                  },
+                  {
+                    label: "Prêts",
+                    value: data.admin.totals.dossiers > 0 ? (data.admin.totals.ready / data.admin.totals.dossiers) * 100 : 0,
+                    tone: "success"
+                  }
+                ]}
+              />
+            </article>
+            <article className="admin-kpi-card">
+              <span>Prêts à relire</span>
+              <strong>{data.admin.totals.ready}</strong>
+              <p>{data.admin.totals.notStarted} à démarrer</p>
+              <DonutKpi
+                label="Taux de dossiers prêts"
+                value={data.admin.totals.dossiers > 0 ? (data.admin.totals.ready / data.admin.totals.dossiers) * 100 : 0}
+                detail="Part des dossiers complets"
+              />
+            </article>
+            <article className="admin-kpi-card">
+              <span>Progression moyenne</span>
+              <strong>{data.admin.totals.averageProgress}%</strong>
+              <div className="kpi-meter" aria-hidden="true">
+                <span style={{ width: `${data.admin.totals.averageProgress}%` }} />
+              </div>
+              <DonutKpi label="Maturité moyenne" value={data.admin.totals.averageProgress} detail="Avancement tous dossiers" />
+            </article>
+            <article className="admin-kpi-card">
+              <span>Livrables produits</span>
+              <strong>{data.admin.totals.livrables}</strong>
+              <p>{data.admin.agentKpis.length} agents mesurés</p>
+              <MiniBarGraph
+                items={data.admin.agentKpis.slice(0, 4).map((agent) => ({
+                  label: agent.title.replace("Diagnostic d'éligibilité", "Diagnostic").replace("Montage du dossier", "Montage"),
+                  value: agent.completionRate,
+                  tone: agent.completionRate >= 100 ? "success" : agent.completionRate >= 50 ? "primary" : "warning"
+                }))}
+              />
+            </article>
+          </div>
+
+          <section className="admin-table-card" aria-labelledby="admin-dossiers-title">
+            <div className="admin-section-head">
+              <div>
+                <span>Dossiers</span>
+                <h2 id="admin-dossiers-title">Vue complète des demandes</h2>
+              </div>
+              <Link className="admin-action-link" href="/mon-dossier?create=1">
+                Nouveau dossier
+              </Link>
+            </div>
+            <div className="admin-table-wrap">
+              <table className="admin-dossier-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Dossier</th>
+                    <th scope="col">Module</th>
+                    <th scope="col">Statut</th>
+                    <th scope="col">Progression</th>
+                    <th scope="col">Prochaine action</th>
+                    <th scope="col">Mise à jour</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.admin.dossiers.length === 0 ? (
+                    <tr>
+                      <td colSpan={6}>Aucun dossier enregistré pour le moment.</td>
+                    </tr>
+                  ) : null}
+                  {data.admin.dossiers.map((dossier) => (
+                    <tr key={dossier.id}>
+                      <td>
+                        <strong>{dossier.name}</strong>
+                        <span>{dossier.structure} - {dossier.dispositif}</span>
+                      </td>
+                      <td>{moduleLabel(dossier.module)}</td>
+                      <td>
+                        <span className={`admin-status admin-status-${dossier.status}`}>{dossierStatusLabel(dossier.status)}</span>
+                      </td>
+                      <td>
+                        <div className="table-progress">
+                          <span style={{ width: `${dossier.progress}%` }} />
+                        </div>
+                        <em>{dossier.completedSteps}/{dossier.totalSteps}</em>
+                      </td>
+                      <td>{dossier.nextStepTitle ?? "Relire et archiver"}</td>
+                      <td>{formatDate(dossier.updatedAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="agent-kpi-section" aria-labelledby="agent-kpi-title">
+            <div className="admin-section-head">
+              <div>
+                <span>Performance</span>
+                <h2 id="agent-kpi-title">KPI par agent de traitement</h2>
+              </div>
+            </div>
+            <div className="agent-kpi-grid">
+              {data.admin.agentKpis.map((agent) => (
+                <article className="agent-kpi-card" key={agent.key}>
+                  <div className="agent-kpi-head">
+                    <div>
+                      <span>{agent.folder}</span>
+                      <h3>{agent.title}</h3>
+                    </div>
+                    <strong>{agent.completionRate}%</strong>
+                  </div>
+                  <section className="model-strategy" aria-label={`Stratégie modèle pour ${agent.title}`}>
+                    <div>
+                      <span>Routage optimisé</span>
+                      <strong>{modelTierLabel(agent.modelTier)}</strong>
+                      <em>Effort {effortLabel(agent.modelEffort)}</em>
+                    </div>
+                    <div className="model-score-grid">
+                      <div>
+                        <span>Qualité</span>
+                        <strong>{agent.qualityScore}</strong>
+                      </div>
+                      <div>
+                        <span>Temps</span>
+                        <strong>{agent.speedScore}</strong>
+                      </div>
+                      <div>
+                        <span>Gain</span>
+                        <strong>{agent.gainScore}</strong>
+                      </div>
+                    </div>
+                    <p>{agent.modelRationale}</p>
+                  </section>
+                  <section className="model-assignment-panel" aria-label={`Affectation des modèles pour ${agent.title}`}>
+                    <label>
+                      Modèle principal
+                      <select
+                        value={agent.primaryModel}
+                        disabled={Boolean(savingModel)}
+                        onChange={(event) => saveAgentModel(agent.key, { openaiModel: event.currentTarget.value })}
+                      >
+                        {data.admin.modelOptions.openai.map((model) => (
+                          <option key={`${agent.key}-openai-${model}`} value={model}>
+                            {model}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Relecture
+                      <select
+                        value={agent.reviewModel}
+                        disabled={Boolean(savingModel)}
+                        onChange={(event) => saveAgentModel(agent.key, { anthropicReviewModel: event.currentTarget.value })}
+                      >
+                        {data.admin.modelOptions.anthropic.map((model) => (
+                          <option key={`${agent.key}-anthropic-${model}`} value={model}>
+                            {model}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Backup open-source
+                      <select
+                        value={agent.backupModel}
+                        disabled={Boolean(savingModel)}
+                        onChange={(event) => saveAgentModel(agent.key, { openSourceBackupModel: event.currentTarget.value })}
+                      >
+                        {data.admin.modelOptions.openSource.map((model) => (
+                          <option key={`${agent.key}-opensource-${model}`} value={model}>
+                            {model}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Effort
+                      <select
+                        value={agent.modelEffort}
+                        disabled={Boolean(savingModel)}
+                        onChange={(event) => saveAgentModel(agent.key, { effort: event.currentTarget.value })}
+                      >
+                        <option value="low">Bas</option>
+                        <option value="standard">Standard</option>
+                        <option value="high">Élevé</option>
+                      </select>
+                    </label>
+                  </section>
+                  <div className="agent-visual-grid" aria-label={`Graphiques de performance pour ${agent.title}`}>
+                    <DonutKpi label="Complétion" value={agent.completionRate} detail={`${agent.completedDossiers}/${data.admin.totals.dossiers} dossiers`} />
+                    <MiniBarGraph
+                      items={[
+                        { label: "Qualité", value: agent.qualityScore, tone: "success" },
+                        { label: "Temps", value: agent.speedScore, tone: "primary" },
+                        { label: "Gain", value: agent.gainScore, tone: "warning" }
+                      ]}
+                    />
+                  </div>
+                  <div className="kpi-meter" aria-label={`Taux de complétion ${agent.completionRate}%`}>
+                    <span style={{ width: `${agent.completionRate}%` }} />
+                  </div>
+                  <dl className="agent-metric-strip">
+                    <div>
+                      <dt>Livrables</dt>
+                      <dd>{agent.totalLivrables}</dd>
+                    </div>
+                    <div>
+                      <dt>Prêts</dt>
+                      <dd>{agent.readyDossiers}</dd>
+                    </div>
+                    <div>
+                      <dt>Attente</dt>
+                      <dd>{agent.pendingDossiers}</dd>
+                    </div>
+                    <div>
+                      <dt>Runs</dt>
+                      <dd>{agent.runCount}</dd>
+                    </div>
+                    <div>
+                      <dt>Tokens</dt>
+                      <dd>{formatNumber(agent.totalTokens)}</dd>
+                    </div>
+                    <div>
+                      <dt>Durée</dt>
+                      <dd>{formatDuration(agent.averageDurationMs)}</dd>
+                    </div>
+                  </dl>
+                  <p className="agent-last-run">
+                    Sortie : {formatDateTime(agent.lastOutputAt)} · Run : {formatDateTime(agent.lastRunAt)} · Statut : {runStatusLabel(agent.lastRunStatus)}
+                  </p>
+                  <details className="agent-detail-drawer">
+                    <summary>Détails fournisseurs et tokens</summary>
+                    <div className="provider-kpi-stack" aria-label={`Détail fournisseurs pour ${agent.title}`}>
+                      {agent.providerBreakdown.map((provider) => (
+                        <section className="provider-kpi" key={`${agent.key}-${provider.provider}-${provider.role}`}>
+                          <div>
+                            <span>{providerRoleLabel(provider.role)}</span>
+                            <strong>{providerLabel(provider.provider)}</strong>
+                            <em>{provider.model}</em>
+                          </div>
+                          <dl>
+                            <div>
+                              <dt>Runs</dt>
+                              <dd>{provider.runCount}</dd>
+                            </div>
+                            <div>
+                              <dt>Succès / erreurs</dt>
+                              <dd>{provider.successCount} / {provider.errorCount}</dd>
+                            </div>
+                            <div>
+                              <dt>Tokens</dt>
+                              <dd>{formatNumber(provider.totalTokens)}</dd>
+                            </div>
+                            <div>
+                              <dt>Durée</dt>
+                              <dd>{formatDuration(provider.averageDurationMs)}</dd>
+                            </div>
+                          </dl>
+                          <p>Dernier appel : {formatDateTime(provider.lastRunAt)}</p>
+                        </section>
+                      ))}
+                    </div>
+                  </details>
+                </article>
+              ))}
+            </div>
+          </section>
         </section>
       ) : null}
       </div>
@@ -730,6 +1204,7 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
           <Link href="/demarches">Démarches</Link>
           <Link href="/dispositifs">Sources dispositifs</Link>
           <Link href="/mon-dossier">Livrables</Link>
+          <Link href="/admin">Administration</Link>
         </nav>
         <nav aria-labelledby="footer-data">
           <h2 id="footer-data">Données</h2>
@@ -758,6 +1233,7 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
         <Link className={currentPage === "demarches" ? "active" : ""} href="/demarches">Démarches</Link>
         <Link className={currentPage === "dispositifs" ? "active" : ""} href="/dispositifs">Sources</Link>
         <Link className={currentPage === "mon-dossier" ? "active" : ""} href="/mon-dossier">Dossier</Link>
+        <Link className={currentPage === "admin" ? "active" : ""} href="/admin">Admin</Link>
       </nav>
     </main>
   );
