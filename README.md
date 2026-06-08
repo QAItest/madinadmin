@@ -51,6 +51,24 @@ Le module couvre :
 
 Agents inclus : Diagnostiqueur, Monteur, Documentaliste, Controleur, Suiveur, Archiviste, Veilleur, OCR, Courrier.
 
+### Modeles par composant
+
+Affectation des modeles Claude telle que choisie dans le projet (non alignee volontairement entre sous-agents et backend) :
+
+| Agent | Sous-agent (`.claude/agents/`) | Backend (`backend/_common.py`) |
+|---|---|---|
+| Diagnostiqueur | `claude-opus-4-7` | `claude-opus-4-5` |
+| Controleur | `claude-opus-4-7` | `claude-opus-4-5` |
+| Archiviste | `claude-opus-4-7` | `claude-opus-4-5` |
+| Veilleur | `claude-opus-4-7` | `claude-opus-4-5` |
+| Monteur | `claude-sonnet-4-5` | `claude-sonnet-4-5` |
+| Documentaliste | `claude-sonnet-4-5` | `claude-sonnet-4-5` |
+| Suiveur | `claude-sonnet-4-5` | `claude-sonnet-4-5` |
+| OCR | `claude-sonnet-4-5` | `claude-sonnet-4-5` |
+| Courrier | `claude-sonnet-4-5` | `claude-sonnet-4-5` |
+
+Les sous-agents, `CLAUDE.md`, `main.py` et le dashboard (`page.tsx`) utilisent `claude-opus-4-7` pour les agents Opus ; le backend FastAPI appelle `claude-opus-4-5` (constante `MODEL_OPUS`). Les agents Sonnet utilisent `claude-sonnet-4-5` partout (constante `MODEL_SONNET`).
+
 Commandes coeur de metier :
 
 - `/diagnostic`
