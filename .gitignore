@@ -12,6 +12,14 @@ Thumbs.db
 reports/stitch/
 .idea/
 
+# Local assistant/tooling state
+.chatgpt/
+.claude/
+.codex/
+**/.chatgpt/
+**/.claude/
+**/.codex/
+
 # Local generated data from the root MVP dashboard
 .data/
 porteurs/*/
