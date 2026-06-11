@@ -28,6 +28,26 @@ export type AgentModelOptions = {
   openSource: string[];
 };
 
+const modelFrenchNames: Record<string, string> = {
+  "gpt-5.5": "Stratège Grand Format",
+  "gpt-5.4": "Pilote Polyvalent",
+  "gpt-5.4-mini": "Opérateur Rapide",
+  "gpt-5.3": "Pilote Standard",
+  "gpt-5.2": "Auditeur Senior",
+  o3: "Raisonneur Expert",
+  "claude-haiku-4-5": "Relecteur Éclair",
+  "claude-sonnet-4-6": "Relecteur Équilibre",
+  "claude-opus-4-8": "Relecteur Premium",
+  "claude-opus-4-7": "Relecteur Profond",
+  "claude-opus-4-6": "Relecteur Renforcé",
+  "Qwen/Qwen3-30B-A3B-Instruct-2507": "Relais Dossier",
+  "mistralai/Mistral-Small-3.2-24B-Instruct-2506": "Relais Express",
+  "meta-llama/Llama-3.3-70B-Instruct": "Relais Grand Volume",
+  "google/gemma-3-27b-it": "Relais Synthèse",
+  "Qwen/Qwen3-VL-30B-A3B-Instruct": "Relais Vision",
+  "local-structured-fallback": "Secours Structuré"
+};
+
 const env = process.env;
 const dataRoot = path.join(process.cwd(), ".data");
 const overridesPath = path.join(dataRoot, "model-overrides.json");
@@ -125,6 +145,14 @@ const routes: Record<AgentKey, Omit<AgentModelRoute, "agent">> = {
 
 function uniq(values: Array<string | undefined>) {
   return Array.from(new Set(values.filter(Boolean) as string[]));
+}
+
+export function modelFrenchName(model: string) {
+  if (modelFrenchNames[model]) return modelFrenchNames[model];
+  if (/mini|haiku|small/i.test(model)) return "Opérateur Rapide";
+  if (/opus|premium|70b|5\.5/i.test(model)) return "Expert Renforcé";
+  if (/sonnet|qwen|balanced|5\.4/i.test(model)) return "Pilote Équilibre";
+  return "Moteur Configuré";
 }
 
 export function availableModelOptions(): AgentModelOptions {

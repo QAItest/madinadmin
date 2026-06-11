@@ -38,7 +38,7 @@ function elapsedSince(startedAt: number) {
 
 function safeError(error: unknown) {
   if (error instanceof Error) return error.message.slice(0, 240);
-  return "Erreur non renseignÃ©e";
+  return "Erreur non renseignée";
 }
 
 function normalizeUsage(usage: unknown): TokenUsage | undefined {
@@ -62,6 +62,62 @@ function normalizeUsage(usage: unknown): TokenUsage | undefined {
     reasoningTokens: source.reasoningTokens ?? source.outputTokenDetails?.reasoningTokens,
     raw: source.raw ?? usage
   };
+}
+
+function fallbackLivrable(input: { agent: AgentKey; frontmatter: string; livrables: Awaited<ReturnType<typeof readLivrables>>; porteur: Porteur }) {
+  const { agent, frontmatter, livrables, porteur } = input;
+  const energy = isEnergyDossier(porteur);
+  const previous = livrables
+    .slice(-3)
+    .map((livrable) => `- ${workflowTitle(livrable.agent)} : ${livrable.title}`)
+    .join("\n");
+  const scope = energy
+    ? "aides Agir Plus, travaux d'économie d'énergie, justificatifs techniques, devis, factures et installateur"
+    : "subvention FEDER, projet, budget, cofinancement, calendrier, bénéficiaires et pièces administratives";
+
+  return [
+    frontmatter,
+    "",
+    `# ${workflowTitle(agent)} - ${porteur.name}`,
+    "",
+    "## Synthèse opérationnelle",
+    "",
+    `Le traitement distant n'est pas disponible pour le moment. Ce livrable structuré permet de continuer la préparation du dossier sans bloquer l'opérateur.`,
+    "",
+    "## Périmètre du dossier",
+    "",
+    `- Porteur : ${porteur.name}`,
+    `- Structure : ${porteur.structure}`,
+    `- Dispositif : ${porteur.dispositif}`,
+    `- Module : ${energy ? "Madin'Énergie / Agir Plus" : "Financement de projet / FEDER"}`,
+    `- Budget déclaré : ${porteur.budget}`,
+    `- Objet : ${porteur.project}`,
+    "",
+    "## Sources disponibles",
+    "",
+    previous || "- Aucun livrable précédent disponible.",
+    "",
+    "## Analyse à compléter",
+    "",
+    `Vérifier les éléments liés au périmètre suivant : ${scope}.`,
+    "",
+    "## Points de vigilance",
+    "",
+    "- Confirmer l'éligibilité auprès des sources officielles du dispositif.",
+    "- Contrôler la cohérence entre le projet, le budget et les pièces disponibles.",
+    "- Ne pas déposer le dossier avant relecture et validation humaine.",
+    energy
+      ? "- Ne pas annoncer de montant de prime sans barème, devis et conditions applicables à jour."
+      : "- Vérifier le taux de cofinancement, les dépenses éligibles et les obligations de publicité.",
+    "",
+    "## Prochaines actions",
+    "",
+    "- Relancer la génération lorsque le service distant est disponible.",
+    "- Compléter les pièces manquantes dans le dossier actif.",
+    "- Vérifier les dates, montants, signatures et justificatifs avant transmission.",
+    "- Archiver la version relue avec les preuves utiles.",
+    ""
+  ].join("\n");
 }
 
 export async function runAgent(porteurId: string, agent: AgentKey) {
@@ -196,19 +252,18 @@ export async function runAgent(porteurId: string, agent: AgentKey) {
   }
 
   if (!content) {
-    await appendAgentRun({
-      id: `${Date.now()}-${porteur.id}-${agent}`,
-      porteurId: porteur.id,
-      porteurName: porteur.name,
-      agent,
-      module: porteur.module ?? "financement",
-      status: "error",
-      startedAt,
-      finishedAt: nowIso(),
-      durationMs: elapsedSince(runStartedAt),
-      providers: providerRuns
+    const fallbackStartedAt = Date.now();
+    content = fallbackLivrable({ agent, frontmatter, livrables, porteur });
+    providerRuns.push({
+      provider: "huggingface",
+      model: "local-structured-fallback",
+      role: "backup",
+      status: "fallback",
+      durationMs: elapsedSince(fallbackStartedAt),
+      error: providerRuns.some((provider) => provider.status === "error")
+        ? "Services distants indisponibles, livrable structuré généré en mode dégradé."
+        : "Aucun service distant configuré, livrable structuré généré en mode dégradé."
     });
-    throw new Error("Aucun modÃ¨le distant disponible pour produire le livrable.");
   }
 
   const reviewStartedAt = Date.now();

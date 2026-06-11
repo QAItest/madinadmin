@@ -14,7 +14,7 @@ import type {
   WorkflowStep
 } from "./types";
 import { integrations } from "./integrations";
-import { availableModelOptions, routeForAgent, reviewModelNameForAgent } from "./model-routing";
+import { availableModelOptions, modelFrenchName, routeForAgent, reviewModelNameForAgent } from "./model-routing";
 import { modelNameForAgent } from "./openai";
 import { previousAgent, workflowDefinitions, workflowTitle } from "./workflow";
 
@@ -222,10 +222,13 @@ function providerBreakdownForAgent(runsForAgent: AgentRunLog[], definition: (typ
     const last = matchingProviders.slice().sort((a, b) => b.finishedAt.localeCompare(a.finishedAt))[0];
     const totalDuration = matchingProviders.reduce((sum, item) => sum + item.provider.durationMs, 0);
 
+    const model = last?.provider.model ?? expected.model;
+
     return {
       provider: expected.provider,
       role: expected.role,
-      model: last?.provider.model ?? expected.model,
+      modelName: modelFrenchName(model),
+      model,
       runCount: matchingProviders.length,
       successCount: matchingProviders.filter((item) => item.provider.status === "success").length,
       fallbackCount: matchingProviders.filter((item) => item.provider.status === "fallback").length,
@@ -315,10 +318,13 @@ async function getAdminOverview(porteurs: Porteur[]): Promise<AdminOverview> {
       gainScore: route.gainScore,
       modelRationale: route.rationale,
       primaryProvider: "OpenAI",
+      primaryModelName: modelFrenchName(route.openaiModel),
       primaryModel: route.openaiModel,
       reviewProvider: "Anthropic",
+      reviewModelName: modelFrenchName(route.anthropicReviewModel),
       reviewModel: route.anthropicReviewModel,
       backupProvider: "Hugging Face",
+      backupModelName: modelFrenchName(route.openSourceBackupModel),
       backupModel: route.openSourceBackupModel,
       totalLivrables: matchingLivrables.length,
       completedDossiers,

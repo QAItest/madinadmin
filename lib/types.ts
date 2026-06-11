@@ -72,10 +72,13 @@ export type AgentKpi = {
   gainScore: number;
   modelRationale: string;
   primaryProvider: string;
+  primaryModelName: string;
   primaryModel: string;
   reviewProvider: string;
+  reviewModelName: string;
   reviewModel: string;
   backupProvider: string;
+  backupModelName: string;
   backupModel: string;
   totalLivrables: number;
   completedDossiers: number;
@@ -104,6 +107,7 @@ export type AgentKpi = {
 export type AgentProviderKpi = {
   provider: AgentProviderRun["provider"];
   role: AgentProviderRun["role"];
+  modelName: string;
   model: string;
   runCount: number;
   successCount: number;

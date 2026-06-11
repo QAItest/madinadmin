@@ -320,6 +320,34 @@ function noticeKindFromStatus(status: number): NoticeKind {
   return "info";
 }
 
+function cleanErrorText(value = "") {
+  return value
+    .replace(/modÃ¨le/g, "modèle")
+    .replace(/Ã©/g, "é")
+    .replace(/Ã¨/g, "è")
+    .replace(/Ãª/g, "ê")
+    .replace(/Ã /g, "à")
+    .replace(/Ã§/g, "ç")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function readErrorDetail(response: Response) {
+  const raw = await response.text();
+  if (!raw) return `HTTP ${response.status}`;
+  try {
+    const parsed = JSON.parse(raw) as { error?: string; message?: string; detail?: string };
+    return cleanErrorText(parsed.error ?? parsed.message ?? parsed.detail ?? raw);
+  } catch {
+    return cleanErrorText(raw.replace(/^\d+\s*-\s*/, ""));
+  }
+}
+
+function errorDetail(error: unknown) {
+  if (error instanceof Error) return cleanErrorText(error.message);
+  return undefined;
+}
+
 export function MadinDashboard({ activePage = "aides", headerActions, initialData }: Props) {
   const contextHeaderActions = useHeaderActions();
   const resolvedHeaderActions = headerActions ?? contextHeaderActions;
@@ -336,6 +364,7 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
   const [portalQuery, setPortalQuery] = useState("");
   const [preferredModule, setPreferredModule] = useState<ModuleKey>(initialData.selected?.module ?? "financement");
   const [selectedDecision, setSelectedDecision] = useState<ModuleKey | undefined>();
+  const [selectedProviderAgentKey, setSelectedProviderAgentKey] = useState<AgentKey | undefined>();
 
   const selectedLivrable = useMemo(
     () => data.livrables.find((livrable) => livrable.path === activeLivrable) ?? data.livrables[0],
@@ -354,12 +383,24 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
   const accountSeed = (data.selected?.id ?? "demo-client").replace(/[^a-z0-9]/gi, "").slice(0, 8).toUpperCase();
   const customerAccountNumber = `MA-${accountSeed.padEnd(8, "0")}`;
   const selectedLivrableText = readableLivrableContent(selectedLivrable?.content);
+  const selectedProviderAgent = data.admin.agentKpis.find((agent) => agent.key === selectedProviderAgentKey);
+  const runningAgentKpi = data.admin.agentKpis.find((agent) => agent.key === busy);
 
   useEffect(() => {
     if (!message) return;
+    if (message.kind === "warning" || message.kind === "error") return;
     const timeout = window.setTimeout(() => setMessage(undefined), 4200);
     return () => window.clearTimeout(timeout);
   }, [message]);
+
+  useEffect(() => {
+    if (!selectedProviderAgentKey) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setSelectedProviderAgentKey(undefined);
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [selectedProviderAgentKey]);
 
   function startTrack(module: ModuleKey) {
     setSelectedDecision(module);
@@ -403,13 +444,13 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
               : `Dossier FEDER pour ${fields.name}`
         })
       });
-      if (!response.ok) throw new Error(await response.text());
+      if (!response.ok) throw new Error(await readErrorDetail(response));
       const created = await response.json();
       await refresh(created.id);
       setShowCreate(false);
       notify({ status: 201, title: "Dossier créé", detail: "Vous pouvez lancer la préparation du dossier." });
     } catch (error) {
-      notify({ status: 500, title: "Création impossible", detail: error instanceof Error ? error.message : undefined });
+      notify({ status: 500, title: "Création impossible", detail: errorDetail(error) });
     } finally {
       setBusy(undefined);
     }
@@ -425,13 +466,13 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ porteurId: selectedId, agent })
       });
-      if (!response.ok) throw new Error(`${response.status} - ${await response.text()}`);
+      if (!response.ok) throw new Error(await readErrorDetail(response));
       const livrable = await response.json();
       await refresh(selectedId);
       setActiveLivrable(livrable.path);
       notify({ status: 200, title: "Livrable généré", detail: livrable.title });
     } catch (error) {
-      notify({ status: 500, title: "Génération impossible", detail: error instanceof Error ? error.message : undefined });
+      notify({ status: 500, title: "Génération impossible", detail: errorDetail(error) });
     } finally {
       setBusy(undefined);
     }
@@ -453,11 +494,11 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ agent, ...patch })
       });
-      if (!response.ok) throw new Error(`${response.status} - ${await response.text()}`);
+      if (!response.ok) throw new Error(await readErrorDetail(response));
       await refresh(selectedId);
       notify({ status: 200, title: "Routage modèle mis à jour", detail: "La prochaine exécution utilisera cette affectation." });
     } catch (error) {
-      notify({ status: 500, title: "Mise à jour impossible", detail: error instanceof Error ? error.message : undefined });
+      notify({ status: 500, title: "Mise à jour impossible", detail: errorDetail(error) });
     } finally {
       setSavingModel(undefined);
     }
@@ -513,7 +554,7 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
       </header>
 
       {message ? (
-        <div className={`notice notice-${message.kind}`} role={message.kind === "error" ? "alert" : "status"} aria-live={message.kind === "error" ? "assertive" : "polite"} aria-atomic="true">
+        <div className={`notice notice-${message.kind}`} role={message.kind === "error" || message.kind === "warning" ? "alert" : "status"} aria-live={message.kind === "error" || message.kind === "warning" ? "assertive" : "polite"} aria-atomic="true">
           <span className="notice-icon" aria-hidden="true">
             {message.kind === "success" ? "✓" : message.kind === "info" ? "i" : message.kind === "warning" ? "!" : "×"}
           </span>
@@ -845,6 +886,38 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
             })}
           </div>
 
+          {runningAgentKpi ? (
+            <section className="live-model-route" aria-label="Routage en cours" aria-live="polite">
+              <div className="live-model-route-head">
+                <span>Traitement en cours</span>
+                <strong>{runningAgentKpi.title}</strong>
+              </div>
+              <ol>
+                <li className="active">
+                  <span>1</span>
+                  <div>
+                    <strong>Moteur principal choisi</strong>
+                    <p>{runningAgentKpi.primaryModelName} · {providerLabel(runningAgentKpi.primaryProvider)} · {runningAgentKpi.primaryModel}</p>
+                  </div>
+                </li>
+                <li>
+                  <span>2</span>
+                  <div>
+                    <strong>Relais automatique si indisponible</strong>
+                    <p>{runningAgentKpi.backupModelName} · {providerLabel(runningAgentKpi.backupProvider)} · {runningAgentKpi.backupModel}</p>
+                  </div>
+                </li>
+                <li>
+                  <span>3</span>
+                  <div>
+                    <strong>Relecture prévue</strong>
+                    <p>{runningAgentKpi.reviewModelName} · {providerLabel(runningAgentKpi.reviewProvider)} · {runningAgentKpi.reviewModel}</p>
+                  </div>
+                </li>
+              </ol>
+            </section>
+          ) : null}
+
           {completedSteps === 0 ? (
             <div className="center-action">
               <button disabled={Boolean(busy)} onClick={() => runStep("diagnostiqueur")} type="button" aria-busy={Boolean(busy)}>
@@ -873,7 +946,6 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
                     <em>{new Date(livrable.createdAt).toLocaleTimeString("fr-FR")}</em>
                   </button>
                 ))}
-                {busy ? <ProgressQuest /> : null}
               </div>
             </section>
 
@@ -1069,6 +1141,7 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
                           </option>
                         ))}
                       </select>
+                      <em>{agent.primaryModelName}</em>
                     </label>
                     <label>
                       Relecture
@@ -1083,6 +1156,7 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
                           </option>
                         ))}
                       </select>
+                      <em>{agent.reviewModelName}</em>
                     </label>
                     <label>
                       Backup open-source
@@ -1097,6 +1171,7 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
                           </option>
                         ))}
                       </select>
+                      <em>{agent.backupModelName}</em>
                     </label>
                     <label>
                       Effort
@@ -1153,39 +1228,10 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
                   <p className="agent-last-run">
                     Sortie : {formatDateTime(agent.lastOutputAt)} · Run : {formatDateTime(agent.lastRunAt)} · Statut : {runStatusLabel(agent.lastRunStatus)}
                   </p>
-                  <details className="agent-detail-drawer">
-                    <summary>Détails fournisseurs et tokens</summary>
-                    <div className="provider-kpi-stack" aria-label={`Détail fournisseurs pour ${agent.title}`}>
-                      {agent.providerBreakdown.map((provider) => (
-                        <section className="provider-kpi" key={`${agent.key}-${provider.provider}-${provider.role}`}>
-                          <div>
-                            <span>{providerRoleLabel(provider.role)}</span>
-                            <strong>{providerLabel(provider.provider)}</strong>
-                            <em>{provider.model}</em>
-                          </div>
-                          <dl>
-                            <div>
-                              <dt>Runs</dt>
-                              <dd>{provider.runCount}</dd>
-                            </div>
-                            <div>
-                              <dt>Succès / erreurs</dt>
-                              <dd>{provider.successCount} / {provider.errorCount}</dd>
-                            </div>
-                            <div>
-                              <dt>Tokens</dt>
-                              <dd>{formatNumber(provider.totalTokens)}</dd>
-                            </div>
-                            <div>
-                              <dt>Durée</dt>
-                              <dd>{formatDuration(provider.averageDurationMs)}</dd>
-                            </div>
-                          </dl>
-                          <p>Dernier appel : {formatDateTime(provider.lastRunAt)}</p>
-                        </section>
-                      ))}
-                    </div>
-                  </details>
+                  <button className="agent-detail-trigger" type="button" onClick={() => setSelectedProviderAgentKey(agent.key)}>
+                    <span>Détails fournisseurs et tokens</span>
+                    <em>{agent.providerBreakdown.length} sources</em>
+                  </button>
                 </article>
               ))}
             </div>
@@ -1193,6 +1239,62 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
         </section>
       ) : null}
       </div>
+      {selectedProviderAgent ? (
+        <div className="agent-detail-overlay" role="presentation" onClick={() => setSelectedProviderAgentKey(undefined)}>
+          <aside
+            className="agent-detail-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="agent-detail-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="agent-detail-panel-head">
+              <div>
+                <span>Fournisseurs et tokens</span>
+                <h2 id="agent-detail-title">{selectedProviderAgent.title}</h2>
+                <p>
+                  {selectedProviderAgent.providerBreakdown.length} sources · {formatNumber(selectedProviderAgent.totalTokens)} tokens ·{" "}
+                  {formatDuration(selectedProviderAgent.averageDurationMs)}
+                </p>
+              </div>
+              <button type="button" onClick={() => setSelectedProviderAgentKey(undefined)} aria-label="Fermer les détails fournisseurs">
+                ×
+              </button>
+            </div>
+            <div className="provider-kpi-stack" aria-label={`Détail fournisseurs pour ${selectedProviderAgent.title}`}>
+              {selectedProviderAgent.providerBreakdown.map((provider) => (
+                <section className="provider-kpi" key={`${selectedProviderAgent.key}-${provider.provider}-${provider.role}`}>
+                  <div>
+                    <span>{providerRoleLabel(provider.role)}</span>
+                    <strong>{providerLabel(provider.provider)}</strong>
+                    <b>{provider.modelName}</b>
+                    <em>{provider.model}</em>
+                  </div>
+                  <dl>
+                    <div>
+                      <dt>Runs</dt>
+                      <dd>{provider.runCount}</dd>
+                    </div>
+                    <div>
+                      <dt>Succès / erreurs</dt>
+                      <dd>{provider.successCount} / {provider.errorCount}</dd>
+                    </div>
+                    <div>
+                      <dt>Tokens</dt>
+                      <dd>{formatNumber(provider.totalTokens)}</dd>
+                    </div>
+                    <div>
+                      <dt>Durée</dt>
+                      <dd>{formatDuration(provider.averageDurationMs)}</dd>
+                    </div>
+                  </dl>
+                  <p>Dernier appel : {formatDateTime(provider.lastRunAt)}</p>
+                </section>
+              ))}
+            </div>
+          </aside>
+        </div>
+      ) : null}
       <footer className="site-footer">
         <div>
           <strong>Madin'Admin</strong>
