@@ -2,8 +2,8 @@
 import { reviewLivrableWithAnthropic } from "./anthropic";
 import { generateWithOpenSource, hasOpenSourceRuntime, reviewWithOpenSource } from "./open-source";
 import { modelForAgent, modelNameForAgent } from "./openai";
-import { appendAgentRun, getPorteur, readLivrables, renderFrontmatter, writeLivrable } from "./store";
-import type { AgentKey, AgentProviderRun, AgentRunStatus, Porteur, TokenUsage } from "./types";
+import { appendAgentRun, getPorteur, listPieces, pieceChecklistFor, readLivrables, renderFrontmatter, writeLivrable } from "./store";
+import type { AgentKey, AgentProviderRun, AgentRunStatus, PieceChecklistItem, PieceJointe, Porteur, TokenUsage } from "./types";
 import { workflowTitle } from "./workflow";
 
 const systems: Record<AgentKey, string> = {
@@ -12,7 +12,7 @@ const systems: Record<AgentKey, string> = {
   monteur:
     "Tu es le Monteur Madin'Admin. Redige les sections du dossier avec logique d'intervention, cadre logique et indicateurs SMART raccordes au dispositif.",
   documentaliste:
-    "Tu es le Documentaliste Madin'Admin. Produis la checklist des pieces, signale les validites critiques et les pieces manquantes.",
+    "Tu es le Documentaliste conformite Madin'Admin. Controle les pieces de maniere stricte avant traitement : categorie, presence, coherence avec le dossier, validite apparente, lisibilite, risque de non-conformite et decision bloquante. Tu n'accordes jamais une validation si une preuve manque, semble mal classee, illisible, incoherente ou insuffisante.",
   controleur:
     "Tu es le Controleur Madin'Admin. Audite coherence, budget, indicateurs, signatures et obligations. Une alerte rouge bloque la validation.",
   suiveur:
@@ -130,12 +130,16 @@ export async function runAgent(porteurId: string, agent: AgentKey) {
   }
 
   const livrables = await readLivrables(porteur.id);
+  const pieces = await listPieces(porteur.id);
+  const pieceChecklist = pieceChecklistFor(porteur, pieces);
   let content: string | undefined;
   const frontmatter = renderFrontmatter(porteur, agent);
   const openAiModel = modelNameForAgent(agent);
   let prompt: {
     porteur: Porteur;
     livrables: Array<{ agent: AgentKey; title: string; path: string; excerpt: string }>;
+    pieces: Array<Pick<PieceJointe, "id" | "originalName" | "category" | "mimeType" | "size" | "uploadedAt" | "status">>;
+    piece_checklist: PieceChecklistItem[];
     output_contract: string;
     frontmatter: string;
   } | undefined;
@@ -149,8 +153,20 @@ export async function runAgent(porteurId: string, agent: AgentKey) {
         path: item.path,
         excerpt: item.content.slice(0, 5000)
       })),
+      pieces: pieces.map((piece) => ({
+        id: piece.id,
+        originalName: piece.originalName,
+        category: piece.category,
+        mimeType: piece.mimeType,
+        size: piece.size,
+        uploadedAt: piece.uploadedAt,
+        status: piece.status
+      })),
+      piece_checklist: pieceChecklist,
       output_contract:
-        isEnergyDossier(porteur)
+        agent === "documentaliste"
+          ? "Retourne un livrable Markdown complet et strict avec sections Decision documentaire, Pieces recues, Pieces requises, Controle de conformite, Ecarts bloquants, Ecarts non bloquants, Actions correctives et Conclusion. La decision doit etre l'une de ces valeurs : BLOQUE, A_COMPLETER, RECEVABLE_SOUS_RESERVE, RECEVABLE. Si une piece requise est absente ou mal categorisee, la decision doit etre BLOQUE. Inclure le frontmatter YAML fourni sans le modifier."
+          : isEnergyDossier(porteur)
           ? "Retourne un livrable Markdown complet pour le module Madin'Energie avec sections Sources lues, Diagnostic energie, Aides applicables, Pieces, Points de vigilance et Prochaines actions. Ne jamais inventer de montant de prime ou de critere EDF. Inclure le frontmatter YAML fourni sans le modifier."
           : "Retourne un livrable Markdown complet avec sections Sources lues, Analyse, Points de vigilance et Prochaines actions. Inclure le frontmatter YAML fourni sans le modifier.",
       frontmatter
@@ -217,8 +233,20 @@ export async function runAgent(porteurId: string, agent: AgentKey) {
         path: item.path,
         excerpt: item.content.slice(0, 5000)
       })),
+      pieces: pieces.map((piece) => ({
+        id: piece.id,
+        originalName: piece.originalName,
+        category: piece.category,
+        mimeType: piece.mimeType,
+        size: piece.size,
+        uploadedAt: piece.uploadedAt,
+        status: piece.status
+      })),
+      piece_checklist: pieceChecklist,
       output_contract:
-        isEnergyDossier(porteur)
+        agent === "documentaliste"
+          ? "Retourne un livrable Markdown complet et strict avec sections Decision documentaire, Pieces recues, Pieces requises, Controle de conformite, Ecarts bloquants, Ecarts non bloquants, Actions correctives et Conclusion. La decision doit etre l'une de ces valeurs : BLOQUE, A_COMPLETER, RECEVABLE_SOUS_RESERVE, RECEVABLE. Si une piece requise est absente ou mal categorisee, la decision doit etre BLOQUE. Inclure le frontmatter YAML fourni sans le modifier."
+          : isEnergyDossier(porteur)
           ? "Retourne un livrable Markdown complet pour le module Madin'Energie avec sections Sources lues, Diagnostic energie, Aides applicables, Pieces, Points de vigilance et Prochaines actions. Ne jamais inventer de montant de prime ou de critere EDF. Inclure le frontmatter YAML fourni sans le modifier."
           : "Retourne un livrable Markdown complet avec sections Sources lues, Analyse, Points de vigilance et Prochaines actions. Inclure le frontmatter YAML fourni sans le modifier.",
       frontmatter

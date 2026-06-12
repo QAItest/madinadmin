@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { CSSProperties, ReactNode, useEffect, useMemo, useState } from "react";
-import type { AgentKey, DashboardData, ModuleKey } from "../lib/types";
+import { CSSProperties, FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import type { AgentKey, DashboardData, ModuleKey, PieceCategory, PieceStatus } from "../lib/types";
 import { useHeaderActions } from "./HeaderActionsContext";
 import { MadinLogoMark } from "./MadinLogoMark";
 
@@ -160,6 +160,18 @@ const pageMeta: Record<DashboardPage, { href: string; label: string; title: stri
 
 const navItems: DashboardPage[] = ["aides", "demarches", "dispositifs", "mon-dossier", "admin"];
 
+const pieceCategoryOptions: Array<{ value: PieceCategory; label: string }> = [
+  { value: "identite", label: "Identité du porteur" },
+  { value: "statuts", label: "Statuts ou existence légale" },
+  { value: "budget", label: "Budget et plan de financement" },
+  { value: "devis", label: "Devis" },
+  { value: "factures", label: "Factures" },
+  { value: "attestations", label: "Attestations" },
+  { value: "technique", label: "Fiches techniques" },
+  { value: "rib", label: "RIB" },
+  { value: "autre", label: "Autre pièce" }
+];
+
 const readinessByModule: Record<ModuleKey, Array<{ label: string; detail: string }>> = {
   financement: [
     { label: "Projet qualifié", detail: "Objectif, territoire, bénéficiaires et calendrier." },
@@ -202,6 +214,19 @@ function formatDateTime(value?: string) {
 function formatNumber(value?: number) {
   if (!value) return "0";
   return new Intl.NumberFormat("fr-FR").format(value);
+}
+
+function formatFileSize(value: number) {
+  if (value < 1024) return `${value} o`;
+  if (value < 1024 * 1024) return `${Math.round(value / 1024)} Ko`;
+  return `${(value / (1024 * 1024)).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Mo`;
+}
+
+function pieceStatusLabel(status: PieceStatus) {
+  if (status === "present") return "Présente";
+  if (status === "a-verifier") return "À vérifier";
+  if (status === "expire") return "Expirée";
+  return "À déposer";
 }
 
 function formatDuration(value?: number) {
@@ -365,6 +390,8 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
   const [preferredModule, setPreferredModule] = useState<ModuleKey>(initialData.selected?.module ?? "financement");
   const [selectedDecision, setSelectedDecision] = useState<ModuleKey | undefined>();
   const [selectedProviderAgentKey, setSelectedProviderAgentKey] = useState<AgentKey | undefined>();
+  const [uploadingPiece, setUploadingPiece] = useState(false);
+  const [deletingPieceId, setDeletingPieceId] = useState<string | undefined>();
 
   const selectedLivrable = useMemo(
     () => data.livrables.find((livrable) => livrable.path === activeLivrable) ?? data.livrables[0],
@@ -385,6 +412,18 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
   const selectedLivrableText = readableLivrableContent(selectedLivrable?.content);
   const selectedProviderAgent = data.admin.agentKpis.find((agent) => agent.key === selectedProviderAgentKey);
   const runningAgentKpi = data.admin.agentKpis.find((agent) => agent.key === busy);
+  const selectedLivrablePdfUrl =
+    data.selected && selectedLivrable
+      ? `/api/livrables/pdf?porteurId=${encodeURIComponent(data.selected.id)}&path=${encodeURIComponent(selectedLivrable.path)}`
+      : undefined;
+  const missingRequiredPieces = data.pieceChecklist.filter((item) => item.count === 0);
+  const requiredPiecesReady = data.pieceChecklist.length > 0 && missingRequiredPieces.length === 0;
+  const requiredPieceCount = data.pieceChecklist.length;
+  const completedPieceCategories = data.pieceChecklist.filter((item) => item.count > 0).length;
+  const missingPiecesDetail =
+    missingRequiredPieces.length > 0
+      ? `Pièces manquantes : ${missingRequiredPieces.map((item) => item.label).join(", ")}.`
+      : undefined;
 
   useEffect(() => {
     if (!message) return;
@@ -458,6 +497,14 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
 
   async function runStep(agent: AgentKey) {
     if (!selectedId) return;
+    if (!requiredPiecesReady) {
+      notify({
+        status: 428,
+        title: "Pièces requises",
+        detail: missingPiecesDetail ?? "Déposez toutes les pièces requises avant de traiter le dossier."
+      });
+      return;
+    }
     setBusy(agent);
     setMessage(undefined);
     try {
@@ -478,7 +525,68 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
     }
   }
 
+  async function uploadPiece(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedId) return;
+    setUploadingPiece(true);
+    setMessage(undefined);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    formData.set("porteurId", selectedId);
+
+    try {
+      const response = await fetch("/api/pieces/upload", {
+        method: "POST",
+        body: formData
+      });
+      if (!response.ok) {
+        notify({ status: response.status, title: "Upload impossible", detail: await readErrorDetail(response) });
+        return;
+      }
+      await refresh(selectedId);
+      form.reset();
+      notify({ status: 201, title: "Pièce ajoutée", detail: "La checklist du dossier a été actualisée." });
+    } catch (error) {
+      notify({ status: 500, title: "Upload impossible", detail: errorDetail(error) });
+    } finally {
+      setUploadingPiece(false);
+    }
+  }
+
+  async function deleteUploadedPiece(pieceId: string) {
+    if (!selectedId) return;
+    setDeletingPieceId(pieceId);
+    setMessage(undefined);
+
+    try {
+      const response = await fetch("/api/pieces/upload", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ porteurId: selectedId, pieceId })
+      });
+      if (!response.ok) {
+        notify({ status: response.status, title: "Suppression impossible", detail: await readErrorDetail(response) });
+        return;
+      }
+      await refresh(selectedId);
+      notify({ status: 200, title: "Pièce supprimée", detail: "La checklist du dossier a été recalculée." });
+    } catch (error) {
+      notify({ status: 500, title: "Suppression impossible", detail: errorDetail(error) });
+    } finally {
+      setDeletingPieceId(undefined);
+    }
+  }
+
   async function runAll() {
+    if (!requiredPiecesReady) {
+      notify({
+        status: 428,
+        title: "Pièces requises",
+        detail: missingPiecesDetail ?? "Déposez toutes les pièces requises avant de traiter le dossier."
+      });
+      return;
+    }
+
     for (const step of data.steps) {
       if (step.status === "pending") break;
       await runStep(step.key);
@@ -686,10 +794,10 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
           <button type="button" onClick={() => setShowCreate(true)}>
             Creer une demande
           </button>
-          <button type="button" onClick={() => runStep("diagnostiqueur")} disabled={!selectedId || Boolean(busy)}>
+          <button type="button" onClick={() => runStep("diagnostiqueur")} disabled={!selectedId || !requiredPiecesReady || Boolean(busy)}>
             Vérifier l'éligibilité
           </button>
-          <button type="button" onClick={runAll} disabled={!selectedId || Boolean(busy)}>
+          <button type="button" onClick={runAll} disabled={!selectedId || !requiredPiecesReady || Boolean(busy)}>
             Continuer la préparation
           </button>
         </div>
@@ -862,6 +970,134 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
             </div>
           </div>
 
+          <section className="pieces-panel" aria-labelledby="pieces-title">
+            <div className="pieces-panel-head">
+              <div>
+                <span>Justificatifs</span>
+                <h2 id="pieces-title">Uploader les pièces et vérifier la suite</h2>
+                <p>
+                  Déposez les documents utiles au dossier. Les pièces restent classées par porteur et peuvent ensuite être contrôlées dans l'étape Pièces.
+                </p>
+              </div>
+              <button
+                className="ghost-button"
+                type="button"
+                onClick={() => runStep("documentaliste")}
+                disabled={
+                  !selectedId ||
+                  !requiredPiecesReady ||
+                  Boolean(busy) ||
+                  data.steps.find((step) => step.key === "documentaliste")?.status === "pending"
+                }
+              >
+                Vérifier les pièces
+              </button>
+            </div>
+
+            <ol className="strict-process" aria-label="Processus strict avant traitement">
+              <li className={data.pieces.length > 0 ? "complete" : "current"}>
+                <span>1</span>
+                <div>
+                  <strong>Déposer les pièces</strong>
+                  <p>Tous les justificatifs attendus doivent être attachés au dossier actif.</p>
+                </div>
+              </li>
+              <li className={requiredPiecesReady ? "complete" : data.pieces.length > 0 ? "current" : ""}>
+                <span>2</span>
+                <div>
+                  <strong>Complétude obligatoire</strong>
+                  <p>{requiredPiecesReady ? "La checklist est complète." : missingPiecesDetail ?? "La checklist sera affichée dès la sélection du dossier."}</p>
+                </div>
+              </li>
+              <li className={requiredPiecesReady ? "current" : "locked"}>
+                <span>3</span>
+                <div>
+                  <strong>Traitement du dossier</strong>
+                  <p>{requiredPiecesReady ? "Les agents peuvent être lancés." : "Traitement verrouillé tant que des pièces requises manquent."}</p>
+                </div>
+              </li>
+            </ol>
+
+            <div className="piece-summary-grid" aria-label="Résumé documentaire">
+              <div>
+                <span>Pièces requises</span>
+                <strong>{completedPieceCategories}/{requiredPieceCount || 0}</strong>
+              </div>
+              <div>
+                <span>Déposées</span>
+                <strong>{data.pieces.length}</strong>
+              </div>
+            </div>
+
+            <div className="piece-prep-grid">
+            <form className="piece-upload-form" onSubmit={uploadPiece}>
+              <label>
+                Type de pièce
+                <select name="category" defaultValue="devis" required>
+                  {pieceCategoryOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Fichier
+                <input name="file" type="file" required accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv,.txt" />
+                <span className="field-hint">PDF, image, Word, Excel, CSV ou texte. Taille maximale : 20 Mo.</span>
+              </label>
+              <button type="submit" disabled={!selectedId || uploadingPiece} aria-busy={uploadingPiece}>
+                {uploadingPiece ? <ProgressQuest compact /> : "Ajouter la pièce"}
+              </button>
+            </form>
+
+            <div className="piece-readiness-grid" aria-label="Checklist des pièces attendues">
+              {data.pieceChecklist.length === 0 ? <p>Aucune checklist disponible pour le moment.</p> : null}
+              {data.pieceChecklist.map((item) => (
+                <article className={`piece-check-card status-${item.status}`} key={item.category}>
+                  <span>{pieceStatusLabel(item.status)}</span>
+                  <strong>{item.label}</strong>
+                  <p>{item.count > 0 ? `${item.count} fichier(s) à contrôler` : "Pièce requise avant traitement du dossier."}</p>
+                </article>
+              ))}
+            </div>
+
+            </div>
+
+            <div className="piece-list" aria-label="Pièces déposées">
+              <div className="piece-list-head">
+                <strong>{data.pieces.length} pièce(s) déposée(s)</strong>
+                <span>{data.pieces.length > 0 ? "Derniers ajouts en premier" : "Aucun fichier attaché"}</span>
+              </div>
+              {data.pieces.length === 0 ? (
+                <p className="piece-empty">Ajoutez un devis, une facture ou un justificatif pour alimenter la vérification documentaire.</p>
+              ) : null}
+              {data.pieces.map((piece) => (
+                <article className="piece-row" key={piece.id}>
+                  <div>
+                    <strong>{piece.originalName}</strong>
+                    <span>
+                      {pieceCategoryOptions.find((option) => option.value === piece.category)?.label ?? "Pièce"} · {formatFileSize(piece.size)}
+                    </span>
+                  </div>
+                  <time dateTime={piece.uploadedAt}>{formatDate(piece.uploadedAt)}</time>
+                  <em>{pieceStatusLabel(piece.status)}</em>
+                  <button
+                    className="piece-delete-button"
+                    type="button"
+                    onClick={() => deleteUploadedPiece(piece.id)}
+                    disabled={deletingPieceId === piece.id}
+                    aria-label={`Supprimer la pièce ${piece.originalName}`}
+                  >
+                    {deletingPieceId === piece.id ? "Suppression..." : "Supprimer"}
+                  </button>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          {requiredPiecesReady ? (
+          <>
           <div className="agent-timeline" aria-label="Étapes de préparation du dossier">
             {agents.map((agent, index) => {
               const step = data.steps.find((item) => item.key === agent.key);
@@ -870,7 +1106,7 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
               return (
                 <button
                   className={`agent-node ${isComplete ? "done" : ""} ${step?.status === "ready" ? "ready" : ""} ${isCurrent ? "running" : ""}`}
-                  disabled={!selectedId || step?.status === "pending" || Boolean(busy)}
+                  disabled={!selectedId || !requiredPiecesReady || step?.status === "pending" || Boolean(busy)}
                   data-status={step?.status ?? "pending"}
                   key={agent.key}
                   onClick={() => runStep(agent.key)}
@@ -920,7 +1156,7 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
 
           {completedSteps === 0 ? (
             <div className="center-action">
-              <button disabled={Boolean(busy)} onClick={() => runStep("diagnostiqueur")} type="button" aria-busy={Boolean(busy)}>
+              <button disabled={!requiredPiecesReady || Boolean(busy)} onClick={() => runStep("diagnostiqueur")} type="button" aria-busy={Boolean(busy)}>
                 {busy ? <ProgressQuest compact /> : "Lancer le diagnostic du dossier"}
               </button>
             </div>
@@ -951,19 +1187,40 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
 
             <section className="livrables" id="livrables-panel">
               <div className="section-title">
-                <h2>{selectedLivrable ? `${selectedLivrable.title} - Livrable` : "Sélectionnez un livrable"}</h2>
+                <div>
+                  <h2>{selectedLivrable ? `${selectedLivrable.title} - Livrable` : "Sélectionnez un livrable"}</h2>
+                  {selectedLivrablePdfUrl ? (
+                    <a className="pdf-download-link" href={selectedLivrablePdfUrl} download>
+                      Télécharger le PDF
+                    </a>
+                  ) : null}
+                </div>
               </div>
               <pre>{selectedLivrableText || "Aucun livrable sélectionné."}</pre>
             </section>
           </div>
 
+          </>
+          ) : (
+            <section className="progression-locked" aria-labelledby="progression-locked-title">
+              <span aria-hidden="true">!</span>
+              <div>
+                <h2 id="progression-locked-title">Progression masquée</h2>
+                <p>La progression du dossier sera disponible après le dépôt de toutes les pièces requises.</p>
+                {missingPiecesDetail ? <small>{missingPiecesDetail}</small> : null}
+              </div>
+            </section>
+          )}
+
           <div className="footer-actions">
             <button className="ghost-button" type="button" onClick={() => setShowCreate(true)}>
               Créer un nouveau dossier
             </button>
-            <button disabled={Boolean(busy)} onClick={runAll} type="button" aria-busy={Boolean(busy)}>
+            {requiredPiecesReady ? (
+              <button disabled={Boolean(busy)} onClick={runAll} type="button" aria-busy={Boolean(busy)}>
               {busy ? <ProgressQuest compact /> : "Continuer la préparation"}
-            </button>
+              </button>
+            ) : null}
           </div>
         </section>
       ) : null}

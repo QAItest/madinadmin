@@ -43,6 +43,40 @@ export type Livrable = {
   createdAt: string;
 };
 
+export type PieceCategory =
+  | "identite"
+  | "statuts"
+  | "budget"
+  | "devis"
+  | "factures"
+  | "attestations"
+  | "technique"
+  | "rib"
+  | "autre";
+
+export type PieceStatus = "present" | "a-verifier" | "manquant" | "expire";
+
+export type PieceJointe = {
+  id: string;
+  porteurId: string;
+  fileName: string;
+  originalName: string;
+  category: PieceCategory;
+  contentHash?: string;
+  mimeType: string;
+  size: number;
+  path: string;
+  uploadedAt: string;
+  status: PieceStatus;
+};
+
+export type PieceChecklistItem = {
+  category: PieceCategory;
+  label: string;
+  status: PieceStatus;
+  count: number;
+};
+
 export type AdminDossierStatus = "a-demarrer" | "en-cours" | "pret";
 
 export type AdminDossierSummary = {
@@ -185,6 +219,8 @@ export type DashboardData = {
   selected?: Porteur;
   steps: WorkflowStep[];
   livrables: Livrable[];
+  pieces: PieceJointe[];
+  pieceChecklist: PieceChecklistItem[];
 };
 
 export type CreatePorteurInput = {

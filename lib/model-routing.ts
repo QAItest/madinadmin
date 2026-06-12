@@ -94,16 +94,16 @@ const routes: Record<AgentKey, Omit<AgentModelRoute, "agent">> = {
     rationale: "Rédaction structurée à fort volume : équilibre vitesse/coût/qualité, avec relecture Sonnet."
   },
   documentaliste: {
-    tier: "speed",
-    openaiModel: env.OPENAI_MODEL_DOCUMENTALISTE ?? defaults.openaiSpeed,
-    anthropicReviewModel: env.ANTHROPIC_MODEL_DOCUMENTALISTE ?? defaults.anthropicSpeed,
-    openSourceBackupModel: env.OPEN_SOURCE_MODEL_DOCUMENTALISTE ?? defaults.openSourceSpeed,
-    openSourceReviewModel: env.OPEN_SOURCE_REVIEW_MODEL_DOCUMENTALISTE ?? defaults.openSourceSpeed,
-    effort: "low",
-    qualityScore: 78,
-    speedScore: 95,
-    gainScore: 93,
-    rationale: "Checklist et extraction de pièces : tâche répétable, le modèle rapide maximise le gain temps."
+    tier: "premium",
+    openaiModel: env.OPENAI_MODEL_DOCUMENTALISTE ?? defaults.openaiPremium,
+    anthropicReviewModel: env.ANTHROPIC_MODEL_DOCUMENTALISTE ?? defaults.anthropicPremium,
+    openSourceBackupModel: env.OPEN_SOURCE_MODEL_DOCUMENTALISTE ?? defaults.openSourceVision,
+    openSourceReviewModel: env.OPEN_SOURCE_REVIEW_MODEL_DOCUMENTALISTE ?? defaults.openSourcePremium,
+    effort: "high",
+    qualityScore: 98,
+    speedScore: 52,
+    gainScore: 84,
+    rationale: "Contrôle strict des justificatifs : cohérence, conformité, validité, catégorie et blocage documentaire exigent le meilleur modèle disponible."
   },
   controleur: {
     tier: "premium",

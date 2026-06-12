@@ -1,4 +1,5 @@
-import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, readFile, readdir, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type {
   AgentKey,
@@ -10,6 +11,9 @@ import type {
   CreatePorteurInput,
   DashboardData,
   Livrable,
+  PieceCategory,
+  PieceChecklistItem,
+  PieceJointe,
   Porteur,
   WorkflowStep
 } from "./types";
@@ -22,6 +26,33 @@ const root = process.cwd();
 const porteursRoot = path.join(root, "porteurs");
 const dataRoot = path.join(root, ".data");
 const agentRunsPath = path.join(dataRoot, "agent-runs.json");
+const piecesPath = path.join(dataRoot, "pieces.json");
+
+const pieceLabels: Record<PieceCategory, string> = {
+  identite: "Identité du porteur",
+  statuts: "Statuts ou existence légale",
+  budget: "Budget et plan de financement",
+  devis: "Devis",
+  factures: "Factures",
+  attestations: "Attestations",
+  technique: "Fiches techniques",
+  rib: "RIB",
+  autre: "Autre pièce"
+};
+
+const requiredPiecesByModule: Record<NonNullable<Porteur["module"]>, PieceCategory[]> = {
+  financement: ["statuts", "budget", "devis", "attestations", "rib", "technique"],
+  energie: ["identite", "devis", "factures", "technique", "attestations", "rib"]
+};
+
+export class DuplicatePieceError extends Error {
+  status = 409;
+
+  constructor(message: string) {
+    super(message);
+    this.name = "DuplicatePieceError";
+  }
+}
 
 function slugify(value: string) {
   return value
@@ -39,6 +70,14 @@ function today() {
 
 function now() {
   return new Date().toISOString();
+}
+
+function normalizePieceName(value: string) {
+  return value.trim().normalize("NFC").toLowerCase();
+}
+
+function contentHash(bytes: Uint8Array) {
+  return createHash("sha256").update(bytes).digest("hex");
 }
 
 async function ensureBaseDirs() {
@@ -164,6 +203,129 @@ export async function writeLivrable(porteur: Porteur, agent: AgentKey, content: 
     content,
     createdAt: now()
   };
+}
+
+export async function listPieces(porteurId?: string): Promise<PieceJointe[]> {
+  await ensureBaseDirs();
+  const pieces = await readJson<PieceJointe[]>(piecesPath, []);
+  const filtered = porteurId ? pieces.filter((piece) => piece.porteurId === porteurId) : pieces;
+  return filtered.sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
+}
+
+export function pieceLabel(category: PieceCategory) {
+  return pieceLabels[category] ?? pieceLabels.autre;
+}
+
+export function pieceChecklistFor(porteur: Porteur | undefined, pieces: PieceJointe[]): PieceChecklistItem[] {
+  if (!porteur) return [];
+  const module = porteur.module ?? "financement";
+  const requiredPieces = requiredPiecesByModule[module];
+
+  return requiredPieces.map((category) => {
+    const count = pieces.filter((piece) => piece.category === category).length;
+    return {
+      category,
+      label: pieceLabel(category),
+      status: count > 0 ? "a-verifier" : "manquant",
+      count
+    };
+  });
+}
+
+export async function missingRequiredPiecesFor(porteurId: string): Promise<PieceChecklistItem[]> {
+  const porteur = await getPorteur(porteurId);
+  if (!porteur) {
+    throw new Error("Dossier introuvable.");
+  }
+
+  const pieces = await listPieces(porteurId);
+  return pieceChecklistFor(porteur, pieces).filter((item) => item.count === 0);
+}
+
+export async function savePiece(input: {
+  porteurId: string;
+  originalName: string;
+  category: PieceCategory;
+  mimeType: string;
+  size: number;
+  bytes: Uint8Array;
+}): Promise<PieceJointe> {
+  await ensureBaseDirs();
+  const porteur = await getPorteur(input.porteurId);
+  if (!porteur) {
+    throw new Error("Dossier introuvable.");
+  }
+
+  const originalName = input.originalName.trim() || "piece";
+  const mimeType = input.mimeType || "application/octet-stream";
+  const hash = contentHash(input.bytes);
+  const pieces = await listPieces();
+  const piecesForPorteur = pieces.filter((piece) => piece.porteurId === porteur.id);
+  const duplicateName = piecesForPorteur.find((piece) => normalizePieceName(piece.originalName) === normalizePieceName(originalName));
+  if (duplicateName) {
+    throw new DuplicatePieceError(`Une pièce nommée "${originalName}" est déjà déposée sur ce dossier.`);
+  }
+
+  const duplicateContent = piecesForPorteur.find((piece) => piece.contentHash && piece.contentHash === hash && piece.mimeType === mimeType);
+  if (duplicateContent) {
+    throw new DuplicatePieceError(`Ce fichier est déjà déposé sous le nom "${duplicateContent.originalName}".`);
+  }
+
+  const extension = path.extname(originalName).toLowerCase();
+  const baseName = slugify(path.basename(originalName, extension)) || "piece";
+  const fileName = `${Date.now()}-${baseName}${extension}`;
+  const relativePath = path.join("porteurs", porteur.id, "pieces", fileName);
+  const absolutePath = path.join(root, relativePath);
+
+  await mkdir(path.dirname(absolutePath), { recursive: true });
+  await writeFile(absolutePath, input.bytes);
+
+  const piece: PieceJointe = {
+    id: `${porteur.id}-${Date.now()}`,
+    porteurId: porteur.id,
+    fileName,
+    originalName,
+    category: input.category,
+    contentHash: hash,
+    mimeType,
+    size: input.size,
+    path: relativePath,
+    uploadedAt: now(),
+    status: "a-verifier"
+  };
+
+  await writeJson(piecesPath, [piece, ...pieces]);
+  await updatePorteurTimestamp(porteur.id);
+  return piece;
+}
+
+export async function deletePiece(input: { porteurId: string; pieceId: string }): Promise<PieceJointe> {
+  await ensureBaseDirs();
+  const pieces = await listPieces();
+  const piece = pieces.find((item) => item.id === input.pieceId && item.porteurId === input.porteurId);
+  if (!piece) {
+    throw new Error("Pièce introuvable.");
+  }
+
+  const absolutePath = path.resolve(root, piece.path);
+  const porteurPiecesRoot = path.resolve(porteursRoot, input.porteurId, "pieces");
+  if (!absolutePath.startsWith(`${porteurPiecesRoot}${path.sep}`)) {
+    throw new Error("Chemin de pièce non autorisé.");
+  }
+
+  await writeJson(
+    piecesPath,
+    pieces.filter((item) => item.id !== piece.id)
+  );
+
+  try {
+    await unlink(absolutePath);
+  } catch {
+    // La métadonnée reste supprimée même si le fichier physique a déjà été retiré.
+  }
+
+  await updatePorteurTimestamp(input.porteurId);
+  return piece;
 }
 
 export async function listAgentRuns(): Promise<AgentRunLog[]> {
@@ -374,6 +536,7 @@ export async function getDashboardData(selectedId?: string): Promise<DashboardDa
   const selected = selectedId
     ? porteurs.find((porteur) => porteur.id === selectedId)
     : porteurs[0];
+  const pieces = selected ? await listPieces(selected.id) : [];
 
   return {
     integrations,
@@ -381,7 +544,9 @@ export async function getDashboardData(selectedId?: string): Promise<DashboardDa
     porteurs,
     selected,
     steps: await getWorkflowSteps(selected?.id),
-    livrables: selected ? await readLivrables(selected.id) : []
+    livrables: selected ? await readLivrables(selected.id) : [],
+    pieces,
+    pieceChecklist: selected ? pieceChecklistFor(selected, pieces) : []
   };
 }
 
