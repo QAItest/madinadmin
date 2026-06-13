@@ -13,6 +13,7 @@ reports/stitch/
 .idea/
 
 # Local assistant/tooling state
+.tools/
 .chatgpt/
 .claude/
 .codex/
