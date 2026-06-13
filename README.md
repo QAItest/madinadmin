@@ -157,6 +157,7 @@ Toute la documentation redactionnelle est regroupee dans `docs/` :
 - `docs/design-system/madinadmin/MASTER.md` : design system (charte, composants).
 - `docs/design-system/madinadmin/pages/dashboard.md` : specification de la page dashboard.
 - `docs/internal/architecture/` : diagrammes et prompt d'architecture interne.
+- `docs/internal/modeles/ingenieur-ia.md` : role de l'agent Ingenieur IA pour l'amelioration continue des modeles.
 - `docs/google-stitch.md` : note d'integration Google Stitch.
 - `docs/screenshots/` : captures SVG utilisees dans ce README.
 

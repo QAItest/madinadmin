@@ -102,6 +102,7 @@ statut: "brouillon"
 - Veilleur : appels a projets.
 - OCR : extraction de pieces.
 - Courrier : reponses administratives.
+- Ingenieur IA : optimisation continue des modeles, prompts, couts, tokens, vitesse, qualite et fallbacks.
 
 ## Interdictions absolues
 
