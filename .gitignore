@@ -15,11 +15,15 @@ reports/stitch/
 # Local assistant/tooling state
 .tools/
 .chatgpt/
-.claude/
 .codex/
 **/.chatgpt/
 **/.claude/
 **/.codex/
+
+# .claude: ignore local state, but keep product agent & command definitions
+.claude/*
+!.claude/agents/
+!.claude/commands/
 
 # Local generated data from the root MVP dashboard
 .data/
