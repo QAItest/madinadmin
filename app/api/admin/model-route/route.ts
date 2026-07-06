@@ -1,4 +1,4 @@
-import { updateAgentModelOverride } from "../../../../lib/model-routing";
+import { ModelOverrideValidationError, updateAgentModelOverride } from "../../../../lib/model-routing";
 import type { AgentKey } from "../../../../lib/types";
 import { workflowDefinitions } from "../../../../lib/workflow";
 
@@ -29,6 +29,10 @@ export async function POST(request: Request) {
       })
     );
   } catch (error) {
+    if (error instanceof ModelOverrideValidationError) {
+      return Response.json({ error: error.message }, { status: error.status });
+    }
+
     return Response.json(
       { error: error instanceof Error ? error.message : "Configuration impossible." },
       { status: 500 }

@@ -129,13 +129,13 @@ export function AuthGate({ children }: Props) {
             <strong>Madin'Admin</strong>
           </div>
           <div className="auth-tools">
-            <span>Accès sécurisé</span>
+            <span>Espace sécurisé</span>
           </div>
         </div>
 
         <div>
           <h1 id="auth-title">Connexion</h1>
-          <p>Identifiez-vous pour accéder aux dossiers et aux espaces de suivi.</p>
+          <p>Connectez-vous pour accéder à vos dossiers et à leur suivi.</p>
         </div>
 
         {error ? (
@@ -153,7 +153,7 @@ export function AuthGate({ children }: Props) {
             Mot de passe
             <input name="password" required autoComplete="current-password" placeholder="Votre mot de passe" type="password" />
           </label>
-          <button type="submit">Entrer dans Madin'Admin</button>
+          <button type="submit">Se connecter</button>
         </form>
       </section>
       <footer className="site-footer auth-site-footer">
@@ -163,7 +163,7 @@ export function AuthGate({ children }: Props) {
         </div>
         <nav aria-labelledby="auth-footer-portal">
           <h2 id="auth-footer-portal">Portail</h2>
-          <a href="#auth-title">Accès sécurisé</a>
+          <a href="#auth-title">Connexion</a>
           <a href="https://www.aread.eu/2025/12/09/guide-feder-2026/" target="_blank" rel="noreferrer" aria-label="Guide FEDER, ouvre dans un nouvel onglet">
             Guide FEDER <span className="sr-only">(ouvre dans un nouvel onglet)</span>
           </a>

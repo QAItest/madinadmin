@@ -22,6 +22,15 @@ export type AgentModelOverride = Partial<
   Pick<AgentModelRoute, "openaiModel" | "anthropicReviewModel" | "openSourceBackupModel" | "openSourceReviewModel" | "effort">
 >;
 
+export class ModelOverrideValidationError extends Error {
+  status = 400;
+
+  constructor(message: string) {
+    super(message);
+    this.name = "ModelOverrideValidationError";
+  }
+}
+
 export type AgentModelOptions = {
   openai: string[];
   anthropic: string[];
@@ -204,13 +213,56 @@ export function readModelOverrides(): Partial<Record<AgentKey, AgentModelOverrid
 
 export function updateAgentModelOverride(agent: AgentKey, override: AgentModelOverride) {
   mkdirSync(dataRoot, { recursive: true });
+  const sanitizedOverride = sanitizeAgentModelOverride(override);
   const overrides = readModelOverrides();
   overrides[agent] = {
     ...(overrides[agent] ?? {}),
-    ...Object.fromEntries(Object.entries(override).filter(([, value]) => typeof value === "string" && value.trim().length > 0))
+    ...sanitizedOverride
   };
   writeFileSync(overridesPath, `${JSON.stringify(overrides, null, 2)}\n`, "utf8");
   return routeForAgent(agent);
+}
+
+function validateOption(value: string, allowedValues: string[], label: string) {
+  if (!allowedValues.includes(value)) {
+    throw new ModelOverrideValidationError(`${label} invalide.`);
+  }
+}
+
+export function sanitizeAgentModelOverride(override: AgentModelOverride): AgentModelOverride {
+  const options = availableModelOptions();
+  const sanitized: AgentModelOverride = {};
+
+  if (typeof override.openaiModel === "string" && override.openaiModel.trim().length > 0) {
+    validateOption(override.openaiModel, options.openai, "Modèle principal");
+    sanitized.openaiModel = override.openaiModel;
+  }
+
+  if (typeof override.anthropicReviewModel === "string" && override.anthropicReviewModel.trim().length > 0) {
+    validateOption(override.anthropicReviewModel, options.anthropic, "Modèle de relecture");
+    sanitized.anthropicReviewModel = override.anthropicReviewModel;
+  }
+
+  if (typeof override.openSourceBackupModel === "string" && override.openSourceBackupModel.trim().length > 0) {
+    validateOption(override.openSourceBackupModel, options.openSource, "Modèle de backup");
+    sanitized.openSourceBackupModel = override.openSourceBackupModel;
+  }
+
+  if (typeof override.openSourceReviewModel === "string" && override.openSourceReviewModel.trim().length > 0) {
+    validateOption(override.openSourceReviewModel, options.openSource, "Modèle de review open-source");
+    sanitized.openSourceReviewModel = override.openSourceReviewModel;
+  }
+
+  if (typeof override.effort === "string" && override.effort.trim().length > 0) {
+    validateOption(override.effort, ["low", "standard", "high"], "Niveau d'effort");
+    sanitized.effort = override.effort;
+  }
+
+  if (Object.keys(sanitized).length === 0) {
+    throw new ModelOverrideValidationError("Aucune mise à jour de routage valide n'a été fournie.");
+  }
+
+  return sanitized;
 }
 
 export function routeForAgent(agent: AgentKey): AgentModelRoute {

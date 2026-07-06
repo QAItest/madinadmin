@@ -30,7 +30,7 @@ Cette matrice donne un nom opérateur en français à chaque modèle afin de rec
 | --- | --- | --- | --- | --- | --- | --- |
 | `diagnostiqueur` | Diagnostic | Auditeur Senior | Relecteur Équilibre | Relais Dossier | Standard | Éligibilité, risques, cadrage initial |
 | `monteur` | Montage dossier | Opérateur Rapide | Relecteur Équilibre | Relais Dossier | Standard | Rédaction structurée et volumétrie |
-| `documentaliste` | Checklist pièces | Opérateur Rapide | Relecteur Éclair | Relais Express | Bas | Pièces, statuts, justificatifs |
+| `documentaliste` | Checklist pièces | Stratège Grand Format | Relecteur Premium | Relais Vision | Élevé | Contrôle strict des justificatifs, validité et blocages |
 | `controleur` | Contrôle conformité | Stratège Grand Format | Relecteur Premium | Relais Grand Volume | Élevé | Cohérence, conformité, blocages |
 | `suiveur` | Suivi post-dépôt | Opérateur Rapide | Relecteur Éclair | Relais Express | Bas | Relances, échéances, suivi |
 | `archiviste` | Archivage et preuve | Opérateur Rapide | Relecteur Équilibre | Relais Grand Volume | Standard | Traçabilité, preuve, conservation |

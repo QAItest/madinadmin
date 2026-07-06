@@ -1,5 +1,6 @@
 ﻿import { generateText } from "ai";
 import { reviewLivrableWithAnthropic } from "./anthropic";
+import { reviewModelNameForAgent } from "./model-routing";
 import { generateWithOpenSource, hasOpenSourceRuntime, reviewWithOpenSource } from "./open-source";
 import { modelForAgent, modelNameForAgent } from "./openai";
 import { appendAgentRun, getPorteur, listPieces, pieceChecklistFor, readLivrables, renderFrontmatter, writeLivrable } from "./store";
@@ -310,7 +311,7 @@ export async function runAgent(porteurId: string, agent: AgentKey) {
   } catch (error) {
     providerRuns.push({
       provider: "anthropic",
-      model: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-5",
+      model: reviewModelNameForAgent(agent),
       role: "review",
       status: "error",
       durationMs: elapsedSince(reviewStartedAt),

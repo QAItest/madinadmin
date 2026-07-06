@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CSSProperties, FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { CSSProperties, FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import type { AgentKey, DashboardData, ModuleKey, PieceCategory, PieceStatus } from "../lib/types";
 import { useHeaderActions } from "./HeaderActionsContext";
 import { MadinLogoMark } from "./MadinLogoMark";
@@ -322,7 +322,7 @@ function readableLivrableContent(content = "") {
 function ProgressQuest({ compact = false }: { compact?: boolean }) {
   return (
     <span className={compact ? "quest-loader quest-loader-compact" : "quest-loader"} role="status" aria-live="polite">
-      <span className="sr-only">Préparation en cours, progression du dossier.</span>
+      <span className="sr-only">Traitement du dossier en cours.</span>
       <span className="quest-loader-track" aria-hidden="true">
         <span className="quest-loader-fill" />
         <span className="quest-loader-step step-one" />
@@ -330,8 +330,8 @@ function ProgressQuest({ compact = false }: { compact?: boolean }) {
         <span className="quest-loader-step step-three" />
       </span>
       <span className="quest-loader-label" aria-hidden="true">
-        <span>Progression du dossier</span>
-        <strong>+ XP</strong>
+        <span>Traitement en cours</span>
+        <strong>Veuillez patienter</strong>
       </span>
     </span>
   );
@@ -346,13 +346,17 @@ function noticeKindFromStatus(status: number): NoticeKind {
 }
 
 function cleanErrorText(value = "") {
-  return value
-    .replace(/modÃ¨le/g, "modèle")
-    .replace(/Ã©/g, "é")
-    .replace(/Ã¨/g, "è")
-    .replace(/Ãª/g, "ê")
-    .replace(/Ã /g, "à")
-    .replace(/Ã§/g, "ç")
+  const replacements: Array<[RegExp, string]> = [
+    [/mod\u00c3\u00a8le/g, "modèle"],
+    [/\u00c3\u00a9/g, "é"],
+    [/\u00c3\u00a8/g, "è"],
+    [/\u00c3\u00aa/g, "ê"],
+    [/\u00c3 /g, "à"],
+    [/\u00c3\u00a7/g, "ç"]
+  ];
+
+  return replacements
+    .reduce((text, [pattern, replacement]) => text.replace(pattern, replacement), value)
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -392,6 +396,8 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
   const [selectedProviderAgentKey, setSelectedProviderAgentKey] = useState<AgentKey | undefined>();
   const [uploadingPiece, setUploadingPiece] = useState(false);
   const [deletingPieceId, setDeletingPieceId] = useState<string | undefined>();
+  const providerDialogRef = useRef<HTMLElement | null>(null);
+  const providerDialogTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const selectedLivrable = useMemo(
     () => data.livrables.find((livrable) => livrable.path === activeLivrable) ?? data.livrables[0],
@@ -439,6 +445,15 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
     }
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [selectedProviderAgentKey]);
+
+  useEffect(() => {
+    if (!selectedProviderAgentKey) {
+      providerDialogTriggerRef.current?.focus();
+      return;
+    }
+
+    providerDialogRef.current?.focus();
   }, [selectedProviderAgentKey]);
 
   function startTrack(module: ModuleKey) {
@@ -634,7 +649,7 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
           </div>
           <div className="site-header-actions">
             {resolvedHeaderActions ? (
-              <div className="site-header-tools" aria-label="Session et preferences">
+              <div className="site-header-tools" aria-label="Session et préférences">
                 {resolvedHeaderActions}
               </div>
             ) : null}
@@ -697,10 +712,10 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
             </Link>
           </div>
         </div>
-        <aside className="portal-search" aria-label="Progression du dossier">
+        <aside className="portal-search" aria-label="Suivi du dossier">
           <section className="progress-panel" aria-labelledby="progress-title">
             <div className="progress-panel-head">
-              <span id="progress-title">Preparation du dossier</span>
+              <span id="progress-title">Préparation du dossier</span>
               <strong>{progressPercent}%</strong>
             </div>
             <div
@@ -792,13 +807,13 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
         </div>
         <div className="service-list">
           <button type="button" onClick={() => setShowCreate(true)}>
-            Creer une demande
+            Créer une demande
           </button>
           <button type="button" onClick={() => runStep("diagnostiqueur")} disabled={!selectedId || !requiredPiecesReady || Boolean(busy)}>
             Vérifier l'éligibilité
           </button>
           <button type="button" onClick={runAll} disabled={!selectedId || !requiredPiecesReady || Boolean(busy)}>
-            Continuer la préparation
+            Poursuivre le traitement
           </button>
         </div>
       </section>
@@ -807,7 +822,7 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
       {currentPage === "demarches" ? (
       <section className="readiness-panel" aria-labelledby="readiness-title">
         <div className="section-kicker">
-          <span>Preparation</span>
+          <span>Préparation</span>
               <h2 id="readiness-title">Avant de préparer le dossier</h2>
         </div>
         <ol>
@@ -848,7 +863,7 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
       {currentPage === "mon-dossier" && showCreate ? (
         <section className="create-card" aria-labelledby="create-title">
           <div className="create-card-head">
-            <h1 id="create-title">Créer un nouveau dossier</h1>
+            <h1 id="create-title">Créer un dossier</h1>
             {data.porteurs.length > 0 ? (
               <button className="return-link" type="button" onClick={() => setShowCreate(false)}>
                 <span aria-hidden="true">←</span>
@@ -974,9 +989,9 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
             <div className="pieces-panel-head">
               <div>
                 <span>Justificatifs</span>
-                <h2 id="pieces-title">Uploader les pièces et vérifier la suite</h2>
+                <h2 id="pieces-title">Déposer les pièces justificatives</h2>
                 <p>
-                  Déposez les documents utiles au dossier. Les pièces restent classées par porteur et peuvent ensuite être contrôlées dans l'étape Pièces.
+                  Déposez les documents utiles au dossier. Les pièces sont classées par porteur et peuvent ensuite être contrôlées dans l'étape Pièces.
                 </p>
               </div>
               <button
@@ -990,30 +1005,30 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
                   data.steps.find((step) => step.key === "documentaliste")?.status === "pending"
                 }
               >
-                Vérifier les pièces
+                Contrôler les pièces
               </button>
             </div>
 
-            <ol className="strict-process" aria-label="Processus strict avant traitement">
+            <ol className="strict-process" aria-label="Étapes avant traitement">
               <li className={data.pieces.length > 0 ? "complete" : "current"}>
                 <span>1</span>
                 <div>
                   <strong>Déposer les pièces</strong>
-                  <p>Tous les justificatifs attendus doivent être attachés au dossier actif.</p>
+                  <p>Ajoutez les justificatifs attendus au dossier en cours.</p>
                 </div>
               </li>
               <li className={requiredPiecesReady ? "complete" : data.pieces.length > 0 ? "current" : ""}>
                 <span>2</span>
                 <div>
-                  <strong>Complétude obligatoire</strong>
-                  <p>{requiredPiecesReady ? "La checklist est complète." : missingPiecesDetail ?? "La checklist sera affichée dès la sélection du dossier."}</p>
+                  <strong>Vérifier la complétude</strong>
+                  <p>{requiredPiecesReady ? "La checklist est complète." : missingPiecesDetail ?? "La checklist s'affichera dès la sélection du dossier."}</p>
                 </div>
               </li>
               <li className={requiredPiecesReady ? "current" : "locked"}>
                 <span>3</span>
                 <div>
                   <strong>Traitement du dossier</strong>
-                  <p>{requiredPiecesReady ? "Les agents peuvent être lancés." : "Traitement verrouillé tant que des pièces requises manquent."}</p>
+                  <p>{requiredPiecesReady ? "Les agents peuvent maintenant être lancés." : "Le traitement commencera lorsque toutes les pièces requises seront déposées."}</p>
                 </div>
               </li>
             </ol>
@@ -1214,11 +1229,11 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
 
           <div className="footer-actions">
             <button className="ghost-button" type="button" onClick={() => setShowCreate(true)}>
-              Créer un nouveau dossier
+              Créer un dossier
             </button>
             {requiredPiecesReady ? (
               <button disabled={Boolean(busy)} onClick={runAll} type="button" aria-busy={Boolean(busy)}>
-              {busy ? <ProgressQuest compact /> : "Continuer la préparation"}
+              {busy ? <ProgressQuest compact /> : "Lancer le traitement"}
               </button>
             ) : null}
           </div>
@@ -1229,11 +1244,11 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
         <section className="admin-page" aria-labelledby="admin-title">
           <div className="admin-hero">
             <div>
-              <span>Console administrateur</span>
-              <h1 id="admin-title">Pilotage des dossiers en cours</h1>
+              <span>Espace administrateur</span>
+              <h1 id="admin-title">Suivi des dossiers en cours</h1>
               <p>
-                Suivez l'ensemble des dossiers FEDER et Agir Plus, identifiez les prochaines actions et mesurez la performance
-                opérationnelle des agents de traitement.
+                Suivez les dossiers FEDER et Agir Plus, identifiez les prochaines actions et consultez les indicateurs
+                opérationnels des agents.
               </p>
             </div>
             <Link className="text-link" href="/mon-dossier">
@@ -1299,7 +1314,7 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
                 <h2 id="admin-dossiers-title">Vue complète des demandes</h2>
               </div>
               <Link className="admin-action-link" href="/mon-dossier?create=1">
-                Nouveau dossier
+                Créer un dossier
               </Link>
             </div>
             <div className="admin-table-wrap">
@@ -1474,6 +1489,14 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
                       <dd>{agent.runCount}</dd>
                     </div>
                     <div>
+                      <dt>Fallbacks</dt>
+                      <dd>{agent.fallbackCount}</dd>
+                    </div>
+                    <div>
+                      <dt>Erreurs</dt>
+                      <dd>{agent.errorCount}</dd>
+                    </div>
+                    <div>
                       <dt>Tokens</dt>
                       <dd>{formatNumber(agent.totalTokens)}</dd>
                     </div>
@@ -1485,7 +1508,17 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
                   <p className="agent-last-run">
                     Sortie : {formatDateTime(agent.lastOutputAt)} · Run : {formatDateTime(agent.lastRunAt)} · Statut : {runStatusLabel(agent.lastRunStatus)}
                   </p>
-                  <button className="agent-detail-trigger" type="button" onClick={() => setSelectedProviderAgentKey(agent.key)}>
+                  <button
+                    className="agent-detail-trigger"
+                    type="button"
+                    aria-haspopup="dialog"
+                    aria-expanded={selectedProviderAgentKey === agent.key}
+                    aria-controls="agent-detail-panel"
+                    onClick={(event) => {
+                      providerDialogTriggerRef.current = event.currentTarget;
+                      setSelectedProviderAgentKey(agent.key);
+                    }}
+                  >
                     <span>Détails fournisseurs et tokens</span>
                     <em>{agent.providerBreakdown.length} sources</em>
                   </button>
@@ -1499,17 +1532,21 @@ export function MadinDashboard({ activePage = "aides", headerActions, initialDat
       {selectedProviderAgent ? (
         <div className="agent-detail-overlay" role="presentation" onClick={() => setSelectedProviderAgentKey(undefined)}>
           <aside
+            id="agent-detail-panel"
             className="agent-detail-panel"
             role="dialog"
             aria-modal="true"
             aria-labelledby="agent-detail-title"
+            aria-describedby="agent-detail-summary"
+            tabIndex={-1}
+            ref={providerDialogRef}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="agent-detail-panel-head">
               <div>
                 <span>Fournisseurs et tokens</span>
                 <h2 id="agent-detail-title">{selectedProviderAgent.title}</h2>
-                <p>
+                <p id="agent-detail-summary">
                   {selectedProviderAgent.providerBreakdown.length} sources · {formatNumber(selectedProviderAgent.totalTokens)} tokens ·{" "}
                   {formatDuration(selectedProviderAgent.averageDurationMs)}
                 </p>

@@ -367,6 +367,10 @@ function sumProviderUsage(providers: AgentProviderRun[], field: "inputTokens" | 
   return providers.reduce((sum, provider) => sum + (provider.usage?.[field] ?? 0), 0);
 }
 
+function countProviderStatus(runs: AgentRunLog[], status: AgentProviderRun["status"]) {
+  return runs.reduce((sum, run) => sum + run.providers.filter((provider) => provider.status === status).length, 0);
+}
+
 function providerBreakdownForAgent(runsForAgent: AgentRunLog[], definition: (typeof workflowDefinitions)[number]): AgentProviderKpi[] {
   const expectedProviders: Array<Pick<AgentProviderKpi, "provider" | "role" | "model">> = [
     { provider: "openai", role: "generation", model: modelNameForAgent(definition.key) },
@@ -468,6 +472,8 @@ async function getAdminOverview(porteurs: Porteur[]): Promise<AdminOverview> {
     const totalDuration = runsForAgent.reduce((sum, run) => sum + run.durationMs, 0);
     const lastRun = runsForAgent.slice().sort((a, b) => b.finishedAt.localeCompare(a.finishedAt))[0];
     const lastProvider = lastRun?.providers.find((provider) => provider.status === "success") ?? lastRun?.providers[0];
+    const providerFallbackCount = countProviderStatus(runsForAgent, "fallback");
+    const providerErrorCount = countProviderStatus(runsForAgent, "error");
 
     return {
       key: definition.key,
@@ -496,8 +502,8 @@ async function getAdminOverview(porteurs: Porteur[]): Promise<AdminOverview> {
       averageContentLength: matchingLivrables.length > 0 ? Math.round(totalContentLength / matchingLivrables.length) : 0,
       runCount: runsForAgent.length,
       successCount: runsForAgent.filter((run) => run.status === "success").length,
-      fallbackCount: runsForAgent.filter((run) => run.status === "fallback" || run.status === "partial").length,
-      errorCount: runsForAgent.filter((run) => run.status === "error").length,
+      fallbackCount: runsForAgent.filter((run) => run.status === "fallback" || run.status === "partial").length + providerFallbackCount,
+      errorCount: runsForAgent.filter((run) => run.status === "error").length + providerErrorCount,
       inputTokens: sumUsage(runsForAgent, "inputTokens"),
       outputTokens: sumUsage(runsForAgent, "outputTokens"),
       totalTokens: sumUsage(runsForAgent, "totalTokens"),
